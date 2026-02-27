@@ -424,40 +424,43 @@ def main_app():
             st.error("Config Error: API Key missing.")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("LOGOUT / TERMINATE UPLINK"):
-            db.logout(st.session_state.user["email"])
-            st.session_state.user = None
-            if "auth_token" in st.query_params:
-                del st.query_params["auth_token"]
-            st.rerun()
-
+    # --- RESEARCH CORE ---
     if nav == "Research Core":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>RESEARCH CORE</h2>", unsafe_allow_html=True)
         st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
 
-        # --- COMPACT RESEARCH PARAMETERS ---
-        with st.expander("⚙️ Advanced Research Parameters & Grounding", expanded=False):
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
-            with c2:
-                diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
-            with c3:
-                space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
-                
-            st.markdown("---")
-            sc1, sc2 = st.columns([1, 1])
-            with sc1:
-                st.markdown("<br>", unsafe_allow_html=True)
-                enable_search = st.toggle("🌐 Enable Web Grounding (Live Internet Search)")
-            with sc2:
-                uploaded_pdf = st.file_uploader("📄 Upload Case File (PDF) for Context", type=["pdf"])
+        # --- COMPACT RESEARCH PARAMETERS & VOICE DICTATION ---
+        param_col, mic_col = st.columns([0.8, 0.2])
+        
+        with param_col:
+            with st.expander("⚙️ Advanced Research Parameters & Grounding", expanded=False):
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
+                with c2:
+                    diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
+                with c3:
+                    space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
+                    
+                st.markdown("---")
+                sc1, sc2 = st.columns([1, 1])
+                with sc1:
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    enable_search = st.toggle("🌐 Enable Web Grounding (Live Internet Search)")
+                with sc2:
+                    uploaded_pdf = st.file_uploader("📄 Upload Case File (PDF) for Context", type=["pdf"])
+
+        with mic_col:
+            # Hides the bulky audio widget inside a sleek, aligned popover button
+            with st.popover("🎙️ VOICE DICTATION", use_container_width=True):
+                st.markdown("<div style='text-align:center; font-size:0.9rem; color:#888;'>Speak your legal query</div>", unsafe_allow_html=True)
+                audio_data = st.audio_input("Record", label_visibility="collapsed")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
         # --- FIXED HEIGHT CHATBOX CONTAINER ---
-        # This prevents the page from auto-scrolling globally. Only the chatbox scrolls.
-        chat_box = st.container(height=500, border=False)
+        # Reduced height prevents layout clipping and ensures visibility at 100% zoom
+        chat_box = st.container(height=420, border=False)
         
         with chat_box:
             history = db.get_history(st.session_state.user['email'])
@@ -466,12 +469,9 @@ def main_app():
                 with st.chat_message(msg['role'], avatar=avatar):
                     st.markdown(msg['content'])
 
-        # --- AUDIO OR TEXT INPUT ---
-        col_text, col_audio = st.columns([0.85, 0.15])
-        with col_text:
-            query = st.chat_input("Enter legal query, section, or case citation...")
-        with col_audio:
-            audio_data = st.audio_input("🎙️")
+        # --- CHAT INPUT (RESTORED NATIVE BEHAVIOR) ---
+        # Freed from columns so it natively anchors to the bottom of the viewport
+        query = st.chat_input("Enter legal query, section, or case citation...")
 
         if query or audio_data:
             with chat_box:
