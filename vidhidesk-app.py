@@ -3,13 +3,13 @@ import google.generativeai as genai
 import sqlite3
 import hashlib
 import time
+import os
 import warnings
 from datetime import datetime
 
-# --- 0. SUPPRESS WARNINGS ---
-# This kills the "support has ended" message from Google's library
+# --- 0. SYSTEM CONFIG & WARNING SUPPRESSION ---
+# Suppress the deprecation warnings from the legacy library
 warnings.filterwarnings("ignore")
-import os
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 
@@ -47,18 +47,20 @@ st.markdown("""
         border-right: 1px solid #222;
     }
     
-    /* TITLE FIX */
-    .vidhi-title-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    /* TITLE FIX - GUARANTEED NO WRAPPING */
+    .vidhi-title-wrapper {
         width: 100%;
-        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-top: 5vh;
+        margin-bottom: 2rem;
     }
     .vidhi-title {
         font-family: 'Cinzel', serif;
         font-weight: 700;
-        font-size: 5rem;
+        font-size: clamp(3rem, 6vw, 6rem); /* Responsive sizing */
         text-align: center;
         margin: 0;
         padding: 0;
@@ -69,21 +71,34 @@ st.markdown("""
         color: transparent;
         text-shadow: 0px 4px 20px rgba(212, 175, 55, 0.3);
         letter-spacing: 8px;
-        white-space: nowrap;
-        line-height: 1.2;
+        white-space: nowrap; /* CRITICAL: Prevents Quantizing */
+        line-height: 1.1;
+    }
+    .vidhi-subtitle {
+        color: #888;
+        font-size: 0.9rem;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        margin-top: 15px;
+    }
+    .gold-divider {
+        height: 1px;
+        width: 250px;
+        background: linear-gradient(90deg, transparent, #D4AF37, transparent);
+        margin: 10px auto;
     }
     
     h1, h2, h3 { color: #D4AF37 !important; font-family: 'Cinzel', serif; }
     p, label, span, div { color: #B0B0B0; }
 
-    /* BUTTONS */
+    /* BUTTONS - GOLD FOIL STYLE */
     .stButton > button {
         background: linear-gradient(145deg, #B8860B, #8A6E0B);
         color: #FFFFFF;
         font-family: 'Cinzel', serif;
         font-weight: 600;
         border: 1px solid #D4AF37;
-        border-radius: 2px;
+        border-radius: 4px;
         padding: 0.7rem 2rem;
         transition: all 0.3s ease;
         text-transform: uppercase;
@@ -97,6 +112,17 @@ st.markdown("""
         box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
         border-color: #FFF;
         color: #FFF;
+    }
+    
+    /* SECONDARY BUTTONS */
+    button[kind="secondary"] {
+        background: transparent !important;
+        border: 1px solid #555 !important;
+        color: #888 !important;
+    }
+    button[kind="secondary"]:hover {
+        border-color: #D4AF37 !important;
+        color: #D4AF37 !important;
     }
 
     /* INPUTS */
@@ -123,6 +149,13 @@ st.markdown("""
         background-color: #D4AF37;
         color: #000;
         border-radius: 50%;
+    }
+    
+    /* EXPANDERS / CARDS */
+    div[data-testid="stExpander"] {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid #222;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -234,13 +267,12 @@ class DBHandler:
 
 db = DBHandler()
 
-# --- 5. AI ENGINE (STABLE & PROVEN) ---
+# --- 5. AI ENGINE (ROBUST FALLBACKS) ---
 def get_gemini_response(query, tone, difficulty, institution):
-    # FORCE INTERNAL KEY
     try:
         genai.configure(api_key=INTERNAL_API_KEY)
     except Exception as e:
-        return f"❌ **Config Error:** {str(e)}"
+        return f"❌ **System Config Error:** {str(e)}"
     
     sys_instruction = f"""
     ROLE: You are VidhiDesk, an elite legal research assistant for {institution}.
@@ -253,11 +285,10 @@ def get_gemini_response(query, tone, difficulty, institution):
     4. FORMAT using Markdown: Use '### Headers', '**Bold**' for emphasis, and '>' for blockquotes.
     """
 
-    # MODELS CONFIRMED IN YOUR SCREENSHOT
-    # We use these exact names because we know they exist for your key.
+    # We use the models proven to exist on your key via check_models.py
     models_to_try = [
-        'gemini-2.0-flash', 
         'gemini-2.5-flash',
+        'gemini-2.0-flash', 
         'gemini-1.5-flash',
         'gemini-1.5-pro'
     ]
@@ -272,27 +303,24 @@ def get_gemini_response(query, tone, difficulty, institution):
             last_error = str(e)
             continue 
 
-    return f"❌ **System Unavailable:** Connection failed. (Last Error: {last_error})"
+    return f"❌ **System Unavailable:** All AI servers failed to respond. (Diagnostics: {last_error})"
 
 # --- 6. UI LOGIC ---
 
 if "user" not in st.session_state: st.session_state.user = None
 
 def login_page():
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    # Title with Fixed Layout
+    # 1. FULL WIDTH TITLE (Guaranteed no wrapping/quantizing)
     st.markdown("""
-        <div class='vidhi-title-container'>
+        <div class='vidhi-title-wrapper'>
             <div class='vidhi-title'>VIDHIDESK</div>
-        </div>
-        <div style='text-align: center; margin-top: -10px; margin-bottom: 40px;'>
-            <div style='height: 1px; width: 200px; background: linear-gradient(90deg, transparent, #D4AF37, transparent); margin: 0 auto;'></div>
-            <p style='color: #888; font-size: 0.9rem; letter-spacing: 4px; text-transform: uppercase; margin-top: 10px;'>Intelligent Legal Infrastructure</p>
+            <div class='gold-divider'></div>
+            <div class='vidhi-subtitle'>Intelligent Legal Infrastructure</div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Login Form
-    c1, c2, c3 = st.columns([1, 1, 1])
+    # 2. LOGIN FORM (Properly centered in columns)
+    c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
         with st.container(border=True):
             st.markdown("<div style='padding: 10px;'>", unsafe_allow_html=True)
@@ -302,16 +330,17 @@ def login_page():
             
             st.markdown("<br>", unsafe_allow_html=True)
             if st.button("INITIATE SESSION", use_container_width=True):
-                with st.spinner("Authenticating..."):
+                with st.spinner("Authenticating credentials..."):
                     time.sleep(0.5) 
                     user = db.login(email, password)
                     if user:
                         st.session_state.user = user
                         st.rerun()
                     else:
-                        st.error("Authentication Failed")
+                        st.error("Authentication Failed: Invalid token or key.")
 
 def main_app():
+    # --- SIDEBAR ---
     with st.sidebar:
         st.image("https://cdn-icons-png.flaticon.com/512/924/924915.png", width=50)
         st.markdown(f"### {st.session_state.user['name'].upper()}")
@@ -322,12 +351,12 @@ def main_app():
         
         st.markdown("---")
         st.markdown(f"""
-        <div style='border: 1px solid #333; padding: 12px; border-radius: 8px; background: #080808;'>
+        <div style='border: 1px solid #222; padding: 12px; border-radius: 6px; background: #080808;'>
             <div style='display:flex; align-items:center; margin-bottom:5px;'>
                 <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
                 <span style='color: #EEE; font-weight:600;'>System Online</span>
             </div>
-            <div style='font-size: 0.7rem; color: #666;'>Engine: GenAI 2.0</div>
+            <div style='font-size: 0.7rem; color: #666;'>Engine: GenAI 2.0/1.5 Hybrid</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -336,6 +365,7 @@ def main_app():
             st.session_state.user = None
             st.rerun()
 
+    # --- RESEARCH CORE ---
     if nav == "Research Core":
         st.markdown("# RESEARCH CORE")
         st.markdown("<div style='height: 1px; width: 60px; background: #D4AF37; margin-bottom: 30px;'></div>", unsafe_allow_html=True)
@@ -375,7 +405,7 @@ def main_app():
                 st.markdown(response)
                 db.save_message(st.session_state.user['email'], "assistant", response)
 
-                if space != "None" and "Connection Failed" not in response:
+                if space != "None" and "System Unavailable" not in response:
                     db.save_to_space(st.session_state.user['email'], space, query, response)
                     st.toast(f"Archived to {space}", icon="📂")
 
@@ -386,6 +416,7 @@ def main_app():
                     db.clear_history(st.session_state.user['email'])
                     st.rerun()
 
+    # --- KNOWLEDGE VAULT ---
     elif nav == "Knowledge Vault":
         st.markdown("# KNOWLEDGE VAULT")
         st.markdown("<div style='height: 1px; width: 60px; background: #D4AF37; margin-bottom: 30px;'></div>", unsafe_allow_html=True)
