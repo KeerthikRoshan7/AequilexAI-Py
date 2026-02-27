@@ -287,11 +287,9 @@ def generate_word_document(query, response):
     doc.add_heading('Subject / Query:', level=1)
     doc.add_paragraph(query)
     
-    doc.add_heading('AI Analysis:', level=1)
+    doc.add_heading('Legal Analysis:', level=1)
     clean_response = response.replace("**", "").replace("*", "")
     doc.add_paragraph(clean_response)
-    
-    doc.add_paragraph('\n---\nGenerated securely via VidhiDesk AI')
     
     bio = io.BytesIO()
     doc.save(bio)
