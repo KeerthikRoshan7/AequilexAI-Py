@@ -10,10 +10,10 @@ st.set_page_config(
     page_title="VidhiDesk | Legal Intelligence",
     page_icon="⚖️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# --- 2. THEME: OBSIDIAN & LIQUID GOLD ---
+# --- 2. THEME: OBSIDIAN & SOUTH INDIAN LIQUID GOLD ---
 st.markdown("""
 <style>
     /* IMPORTS */
@@ -24,73 +24,180 @@ st.markdown("""
         from {opacity: 0; transform: translate3d(0, 20px, 0);}
         to {opacity: 1; transform: translate3d(0, 0, 0);}
     }
+    @keyframes liquidShimmer {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
+        50% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); }
+        100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
+    }
 
-    /* GLOBAL RESET */
+    /* GLOBAL RESET & INTRICATE BACKGROUND */
     .stApp {
-        background-color: #000000;
-        background-image: radial-gradient(circle at 50% 50%, #111 0%, #000 100%);
+        background-color: #030303;
+        /* Subtle Mandala/Kolam inspired background texture */
+        background-image: 
+            radial-gradient(circle at center, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+            repeating-radial-gradient(circle at 0 0, transparent 0, #030303 10px), 
+            repeating-linear-gradient(#050505, #050505);
         color: #E0E0E0;
         font-family: 'Inter', sans-serif;
     }
 
     /* SIDEBAR */
     section[data-testid="stSidebar"] {
-        background-color: #050505;
-        border-right: 1px solid #222;
+        background-color: #080808;
+        border-right: 2px solid #1a1505;
     }
     
-    /* TITLE FIX - GUARANTEED NO QUANTIZING */
+    /* TITLE FIX & TEMPLE GOLD TYPOGRAPHY */
     .vidhi-title-container {
         width: 100%;
         text-align: center;
         padding-top: 5vh;
         padding-bottom: 2rem;
+        position: relative;
     }
     .vidhi-title {
         font-family: 'Cinzel', serif;
         font-weight: 700;
-        /* Scales fluidly with screen width, never exceeds container */
-        font-size: clamp(2.5rem, 6vw, 4.5rem); 
+        font-size: clamp(3rem, 6vw, 5rem); 
         margin: 0 auto;
-        background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%);
+        /* Liquid Gold Gradient */
+        background: linear-gradient(45deg, #B38728, #FBF5B7, #DAA520, #FDF5A9, #AA771C);
+        background-size: 200% 200%;
+        animation: liquidShimmer 6s ease infinite;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         color: transparent;
-        text-shadow: 0px 4px 20px rgba(212, 175, 55, 0.3);
-        letter-spacing: 0.2em; /* Reduced spacing to prevent overflow */
-        white-space: nowrap !important; /* Forces single line */
+        text-shadow: 2px 4px 15px rgba(212, 175, 55, 0.4);
+        letter-spacing: 0.15em; 
+        white-space: nowrap !important; 
     }
+    
+    /* Intricate Underline/Divider */
+    .temple-divider {
+        height: 3px;
+        width: 250px;
+        background: linear-gradient(90deg, transparent, #D4AF37, #FFF8DC, #D4AF37, transparent);
+        margin: 15px auto;
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5);
+    }
+    
     .vidhi-subtitle {
-        color: #888;
+        color: #A99A75;
         font-size: clamp(0.7rem, 1.5vw, 0.9rem);
-        letter-spacing: 4px;
+        letter-spacing: 5px;
         text-transform: uppercase;
         margin-top: 10px;
-    }
-    .gold-divider {
-        height: 1px;
-        width: 150px;
-        background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-        margin: 15px auto;
+        font-weight: 600;
     }
     
     h1, h2, h3 { color: #D4AF37 !important; font-family: 'Cinzel', serif; }
     p, label, span, div { color: #B0B0B0; }
 
-    /* BUTTONS - GOLD FOIL STYLE */
+    /* =========================================
+       UI WIDGET FIXES (DROPDOWNS & SLIDERS)
+       ========================================= */
+       
+    /* Selectbox/Dropdown container styling */
+    div[data-baseweb="select"] > div {
+        background-color: #0A0A0A !important;
+        border: 1px solid #333 !important;
+        color: #D4AF37 !important;
+        border-radius: 6px;
+    }
+    div[data-baseweb="select"] > div:hover {
+        border-color: #D4AF37 !important;
+    }
+    
+    /* The actual Dropdown Popover Menu */
+    div[data-baseweb="popover"] {
+        background-color: #0A0A0A !important;
+        border: 1px solid #D4AF37 !important;
+        border-radius: 6px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.8) !important;
+    }
+    div[data-baseweb="popover"] ul {
+        background-color: #0A0A0A !important;
+    }
+    div[data-baseweb="popover"] li {
+        color: #E0E0E0 !important;
+        transition: background 0.2s;
+    }
+    /* Dropdown Hover State */
+    div[data-baseweb="popover"] li:hover {
+        background-color: rgba(212, 175, 55, 0.15) !important;
+        color: #D4AF37 !important;
+    }
+
+    /* Slider Track */
+    div[data-baseweb="slider"] > div {
+        background: #222 !important;
+    }
+    /* Filled Slider Track */
+    div[data-baseweb="slider"] > div > div {
+        background: linear-gradient(90deg, #8A6E0B, #D4AF37) !important;
+    }
+    /* Slider Pointer/Thumb */
+    div[data-baseweb="slider"] div[role="slider"] {
+        background-color: #FFDF00 !important;
+        border: 2px solid #FFF !important;
+        box-shadow: 0 0 10px #D4AF37 !important;
+        transform: scale(1.2);
+    }
+    /* Slider Value Labels */
+    div[data-testid="stTickBar"] span {
+        color: #A99A75 !important;
+        font-size: 0.8rem;
+    }
+
+    /* INPUTS */
+    .stTextInput > div > div > input, .stChatInput textarea {
+        background: #080808;
+        border: 1px solid #2A2515;
+        color: #FFF;
+        border-radius: 6px;
+        padding: 10px;
+    }
+    .stTextInput > div > div > input:focus, .stChatInput textarea:focus {
+        border-color: #D4AF37;
+        box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+    }
+
+    /* BUTTONS - INTRICATE GOLD FOIL STYLE */
     .stButton > button {
         background: linear-gradient(145deg, #B8860B, #8A6E0B);
         color: #FFFFFF;
         font-family: 'Cinzel', serif;
         font-weight: 600;
-        border: 1px solid #D4AF37;
+        border: 1px solid #E5C158;
         border-radius: 4px;
         padding: 0.7rem 2rem;
         transition: all 0.3s ease;
         text-transform: uppercase;
         letter-spacing: 2px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        box-shadow: inset 0 0 5px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.6);
         width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    /* Liquid Gold Hover Effect */
+    .stButton > button::after {
+        content: '';
+        position: absolute;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .stButton > button:hover::after {
+        opacity: 1;
     }
     .stButton > button:hover {
         transform: translateY(-2px);
@@ -111,23 +218,10 @@ st.markdown("""
         color: #D4AF37 !important;
     }
 
-    /* INPUTS */
-    .stTextInput > div > div > input, .stChatInput textarea {
-        background: #080808;
-        border: 1px solid #333;
-        color: #FFF;
-        border-radius: 4px;
-        padding: 10px;
-    }
-    .stTextInput > div > div > input:focus, .stChatInput textarea:focus {
-        border-color: #D4AF37;
-        box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
-    }
-
     /* CHAT BUBBLES */
     .stChatMessage {
-        background-color: rgba(255,255,255,0.03);
-        border: 1px solid #222;
+        background-color: rgba(20, 15, 5, 0.4);
+        border: 1px solid #2A2515;
         border-radius: 8px;
         animation: fadeInUp 0.4s ease-out;
     }
@@ -135,13 +229,24 @@ st.markdown("""
         background-color: #D4AF37;
         color: #000;
         border-radius: 50%;
+        box-shadow: 0 0 10px rgba(212,175,55,0.4);
+    }
+    
+    /* EXPANDERS / CARDS */
+    div[data-testid="stExpander"] {
+        background: rgba(10, 8, 0, 0.6);
+        border: 1px solid #332910;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+    div[data-testid="stExpander"]:hover {
+        border-color: #D4AF37;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # --- 3. SESSION STATE INIT ---
 if "user" not in st.session_state: st.session_state.user = None
-if "api_key" not in st.session_state: st.session_state.api_key = ""
 
 INSTITUTIONS = sorted([
     "National Law School of India University (NLSIU), Bangalore", "NALSAR University of Law, Hyderabad",
@@ -153,7 +258,7 @@ INSTITUTIONS = sorted([
     "Tamil Nadu National Law University (TNNLU)", "Maharashtra National Law University (MNLU), Mumbai",
     "Faculty of Law, University of Delhi (DU)", "Government Law College (GLC), Mumbai", 
     "Symbiosis Law School (SLS), Pune", "School of Law, Christ University", "Jindal Global Law School"
-]) # Shortened purely for code brevity, feel free to paste the long list back here.
+]) 
 
 # --- 4. DATABASE MANAGER ---
 class DBHandler:
@@ -233,13 +338,15 @@ class DBHandler:
 
 db = DBHandler()
 
-# --- 5. AI ENGINE (NEW SDK & SECURE KEY USAGE) ---
-def get_gemini_response(query, tone, difficulty, institution, api_key):
-    if not api_key:
-        return "⚠️ **Access Error:** No API Key found. Please paste your Gemini API Key into the sidebar to activate VidhiDesk."
+# --- 5. AI ENGINE (SECURE SECRETS INTEGRATION) ---
+def get_gemini_response(query, tone, difficulty, institution):
+    # SECURE KEY FETCH: Users never see this, and it doesn't leak in the code.
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        return "❌ **System Config Error:** The server administrator has not configured the `GEMINI_API_KEY` in Streamlit Secrets."
 
     try:
-        # Utilizing the new google-genai library specification
         client = genai.Client(api_key=api_key)
     except Exception as e:
         return f"❌ **System Config Error:** {str(e)}"
@@ -255,9 +362,9 @@ def get_gemini_response(query, tone, difficulty, institution, api_key):
     4. FORMAT using Markdown: Use '### Headers', '**Bold**' for emphasis, and '>' for blockquotes.
     """
 
-    # Exact models your environment proved it supports
     models_to_try = [
         'gemini-2.5-flash',
+        'gemini-2.5-pro',
         'gemini-2.0-flash'
     ]
     
@@ -271,9 +378,8 @@ def get_gemini_response(query, tone, difficulty, institution, api_key):
             return response.text 
         except Exception as e:
             last_error = str(e)
-            # If the key is invalid, stop hunting and tell the user immediately
             if "API_KEY_INVALID" in last_error or "not found" in last_error.lower():
-                return f"❌ **Authentication Failed:** The API key you provided is invalid, expired, or was deactivated due to a leak."
+                return f"❌ **Authentication Failed:** The server's API key is invalid or revoked."
             continue 
 
     return f"❌ **System Unavailable:** AI servers failed to respond. (Diagnostics: {last_error})"
@@ -281,16 +387,14 @@ def get_gemini_response(query, tone, difficulty, institution, api_key):
 # --- 6. UI LOGIC ---
 
 def login_page():
-    # 1. FULL WIDTH TITLE (Moved completely out of columns to fix quantizing)
     st.markdown("""
         <div class='vidhi-title-container'>
             <h1 class='vidhi-title'>VIDHIDESK</h1>
-            <div class='gold-divider'></div>
+            <div class='temple-divider'></div>
             <div class='vidhi-subtitle'>Intelligent Legal Infrastructure</div>
         </div>
     """, unsafe_allow_html=True)
     
-    # 2. LOGIN FORM 
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
         with st.container(border=True):
@@ -322,24 +426,18 @@ def main_app():
         
         st.markdown("---")
         
-        # SECURE API KEY INPUT
-        st.markdown("#### 🔑 System Access Key")
-        api_input = st.text_input("Gemini API Key", type="password", value=st.session_state.api_key, help="Paste your active Gemini API key here")
-        if api_input != st.session_state.api_key:
-            st.session_state.api_key = api_input
-            st.rerun()
-
-        # Status Indicator
-        status_color = "#4CAF50" if st.session_state.api_key else "#FF5252"
-        status_text = "System Online" if st.session_state.api_key else "Key Required"
+        # Admin Status Indicator (No inputs for users)
+        key_configured = "GEMINI_API_KEY" in st.secrets
+        status_color = "#4CAF50" if key_configured else "#FF5252"
+        status_text = "System Online" if key_configured else "Server Config Error"
         
         st.markdown(f"""
-        <div style='border: 1px solid #222; padding: 12px; border-radius: 6px; background: #080808; margin-top:10px;'>
+        <div style='border: 1px solid #332910; padding: 12px; border-radius: 6px; background: #0A0802; margin-top:10px;'>
             <div style='display:flex; align-items:center; margin-bottom:5px;'>
                 <span style='color: {status_color}; font-size: 1.2rem; margin-right: 8px;'>●</span> 
-                <span style='color: #EEE; font-weight:600;'>{status_text}</span>
+                <span style='color: #D4AF37; font-weight:600;'>{status_text}</span>
             </div>
-            <div style='font-size: 0.7rem; color: #666;'>Engine: GenAI 2.5 Node</div>
+            <div style='font-size: 0.7rem; color: #888;'>Engine: GenAI 2.5 Node</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -351,7 +449,7 @@ def main_app():
     # --- RESEARCH CORE ---
     if nav == "Research Core":
         st.markdown("# RESEARCH CORE")
-        st.markdown("<div style='height: 1px; width: 60px; background: #D4AF37; margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 0 0 30px 0; width: 100px;'></div>", unsafe_allow_html=True)
 
         with st.container(border=True):
             c1, c2, c3 = st.columns(3)
@@ -374,22 +472,21 @@ def main_app():
                 spinner_ph = st.empty()
                 spinner_ph.markdown("""
                     <div style='display: flex; align-items: center; color: #D4AF37; padding: 10px;'>
-                        <span style='margin-right: 12px; font-size: 1.2rem;'>⚡</span> 
+                        <span style='margin-right: 12px; font-size: 1.2rem; animation: pulseGlow 1.5s infinite;'>⚡</span> 
                         <span style='font-family: Cinzel; font-weight: 600; letter-spacing: 1px;'>ANALYZING LEGAL CORPUS...</span>
                     </div>
                 """, unsafe_allow_html=True)
                 
                 response = get_gemini_response(
                     query, tone, diff, 
-                    st.session_state.user['institution'],
-                    st.session_state.api_key
+                    st.session_state.user['institution']
                 )
                 
                 spinner_ph.empty()
                 st.markdown(response)
                 db.save_message(st.session_state.user['email'], "assistant", response)
 
-                if space != "None" and "❌" not in response and "⚠️" not in response:
+                if space != "None" and "❌" not in response:
                     db.save_to_space(st.session_state.user['email'], space, query, response)
                     st.toast(f"Archived to {space}", icon="📂")
 
@@ -403,7 +500,7 @@ def main_app():
     # --- KNOWLEDGE VAULT ---
     elif nav == "Knowledge Vault":
         st.markdown("# KNOWLEDGE VAULT")
-        st.markdown("<div style='height: 1px; width: 60px; background: #D4AF37; margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 0 0 30px 0; width: 100px;'></div>", unsafe_allow_html=True)
         
         t1, t2, t3 = st.tabs(["📚 RESEARCH", "📝 PAPERS", "🎓 STUDY"])
         for tab, cat in zip([t1, t2, t3], ["Research", "Paper", "Study"]):
