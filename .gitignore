@@ -1,0 +1,12 @@
+Hide Streamlit Secrets
+
+.streamlit/
+
+Hide Environment Variables
+
+.env
+
+Hide Python Caches
+
+pycache/
+*.pyc
