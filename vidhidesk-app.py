@@ -1,17 +1,9 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai # EXCLUSIVELY USING NEW SDK
 import sqlite3
 import hashlib
 import time
-import os
-import warnings
 from datetime import datetime
-
-# --- 0. SYSTEM CONFIG & WARNING SUPPRESSION ---
-# Suppress the deprecation warnings from the legacy library
-warnings.filterwarnings("ignore")
-os.environ["GRPC_VERBOSITY"] = "ERROR"
-os.environ["GLOG_minloglevel"] = "2"
 
 # --- 1. APP CONFIGURATION ---
 st.set_page_config(
@@ -47,7 +39,7 @@ st.markdown("""
         border-right: 1px solid #222;
     }
     
-    /* TITLE FIX - GUARANTEED NO WRAPPING */
+    /* TITLE FIX - RESPONSIVE & NON-WRAPPING */
     .vidhi-title-wrapper {
         width: 100%;
         display: flex;
@@ -56,13 +48,15 @@ st.markdown("""
         justify-content: center;
         margin-top: 5vh;
         margin-bottom: 2rem;
+        overflow: hidden;
     }
     .vidhi-title {
         font-family: 'Cinzel', serif;
         font-weight: 700;
-        font-size: clamp(3rem, 6vw, 6rem); /* Responsive sizing */
+        /* Dynamic scaling: minimum 2.5rem, scales with viewport, max 5rem */
+        font-size: clamp(2.5rem, 8vw, 5rem); 
         text-align: center;
-        margin: 0;
+        margin: 0 auto;
         padding: 0;
         background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%);
         -webkit-background-clip: text;
@@ -71,19 +65,21 @@ st.markdown("""
         color: transparent;
         text-shadow: 0px 4px 20px rgba(212, 175, 55, 0.3);
         letter-spacing: 8px;
-        white-space: nowrap; /* CRITICAL: Prevents Quantizing */
-        line-height: 1.1;
+        white-space: nowrap !important; /* CRITICAL: Prevents Quantizing */
+        line-height: 1.2;
     }
     .vidhi-subtitle {
         color: #888;
-        font-size: 0.9rem;
+        font-size: clamp(0.7rem, 2vw, 0.9rem);
         letter-spacing: 5px;
         text-transform: uppercase;
         margin-top: 15px;
+        text-align: center;
     }
     .gold-divider {
         height: 1px;
         width: 250px;
+        max-width: 80%;
         background: linear-gradient(90deg, transparent, #D4AF37, transparent);
         margin: 10px auto;
     }
@@ -267,10 +263,11 @@ class DBHandler:
 
 db = DBHandler()
 
-# --- 5. AI ENGINE (ROBUST FALLBACKS) ---
+# --- 5. AI ENGINE (IMPLEMENTING OFFICIAL GOOGLE-GENAI MODELS) ---
 def get_gemini_response(query, tone, difficulty, institution):
     try:
-        genai.configure(api_key=INTERNAL_API_KEY)
+        # Initialize the new SDK client
+        client = genai.Client(api_key=INTERNAL_API_KEY)
     except Exception as e:
         return f"❌ **System Config Error:** {str(e)}"
     
@@ -285,19 +282,24 @@ def get_gemini_response(query, tone, difficulty, institution):
     4. FORMAT using Markdown: Use '### Headers', '**Bold**' for emphasis, and '>' for blockquotes.
     """
 
-    # We use the models proven to exist on your key via check_models.py
+    # Based strictly on your documentation screenshot of Recommended Models for 2025.
+    # 1.5 Models are completely eradicated from this list to prevent 404s.
     models_to_try = [
+        'gemini-3-pro-preview',     # High logic / Coding equivalent
+        'gemini-3-flash-preview',   # General text
+        'gemini-2.5-pro',
         'gemini-2.5-flash',
-        'gemini-2.0-flash', 
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-2.0-flash'
     ]
     
     last_error = ""
     for model_name in models_to_try:
         try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(f"{sys_instruction}\n\nUSER QUERY: {query}")
+            # Using the exact new SDK syntax
+            response = client.models.generate_content(
+                model=model_name,
+                contents=sys_instruction + "\n\nUSER QUERY: " + query
+            )
             return response.text 
         except Exception as e:
             last_error = str(e)
@@ -310,16 +312,16 @@ def get_gemini_response(query, tone, difficulty, institution):
 if "user" not in st.session_state: st.session_state.user = None
 
 def login_page():
-    # 1. FULL WIDTH TITLE (Guaranteed no wrapping/quantizing)
+    # 1. FULL WIDTH TITLE (With dynamic CSS clamp to prevent wrapping)
     st.markdown("""
         <div class='vidhi-title-wrapper'>
-            <div class='vidhi-title'>VIDHIDESK</div>
+            <h1 class='vidhi-title'>VIDHIDESK</h1>
             <div class='gold-divider'></div>
             <div class='vidhi-subtitle'>Intelligent Legal Infrastructure</div>
         </div>
     """, unsafe_allow_html=True)
     
-    # 2. LOGIN FORM (Properly centered in columns)
+    # 2. LOGIN FORM (Properly centered)
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
         with st.container(border=True):
@@ -356,7 +358,7 @@ def main_app():
                 <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
                 <span style='color: #EEE; font-weight:600;'>System Online</span>
             </div>
-            <div style='font-size: 0.7rem; color: #666;'>Engine: GenAI 2.0/1.5 Hybrid</div>
+            <div style='font-size: 0.7rem; color: #666;'>Engine: GenAI 3.0 / 2.5 Node</div>
         </div>
         """, unsafe_allow_html=True)
         
