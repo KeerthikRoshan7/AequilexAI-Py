@@ -57,6 +57,23 @@ st.markdown(f"""
     }}
     h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; }}
     
+    .block-container {{
+        padding-top: 2rem !important;
+        padding-bottom: 6rem !important; /* Space for native chat input */
+    }}
+
+    /* --- STICKY HEADER MAGIC --- */
+    /* This incredibly specific CSS selects only the exact wrapper holding our header marker and locks it to the top */
+    div[data-testid="stVerticalBlock"]:has(#sticky-header-marker):not(:has(div[data-testid="stVerticalBlock"]:has(#sticky-header-marker))) {{
+        position: sticky !important;
+        top: 2rem !important;
+        z-index: 999 !important;
+        background-color: {t_bg} !important;
+        padding: 5px 0px 15px 0px !important;
+        border-bottom: 1px solid {t_border} !important;
+        margin-bottom: 20px !important;
+    }}
+
     .vidhi-title-container {{ width: 100%; text-align: center; padding-top: 3vh; padding-bottom: 2rem; }}
     .vidhi-title {{
         font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0 auto;
@@ -71,12 +88,7 @@ st.markdown(f"""
     .vidhi-subtitle {{ color: {t_subtext}; font-size: 0.8rem; letter-spacing: 4px; text-transform: uppercase; }}
     p, label, span, div {{ color: {t_text}; }}
 
-    /* Custom Scrollbars for Chat Container */
-    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-    ::-webkit-scrollbar-track {{ background: transparent; }}
-    ::-webkit-scrollbar-thumb {{ background: rgba(212, 175, 55, 0.5); border-radius: 4px; }}
-    ::-webkit-scrollbar-thumb:hover {{ background: rgba(212, 175, 55, 0.8); }}
-
+    /* UI TWEAKS */
     div[data-testid="InputInstructions"] {{ display: none !important; }}
     div[data-baseweb="select"] {{ cursor: pointer !important; }}
     div[data-baseweb="select"] * {{ cursor: pointer !important; }}
@@ -90,6 +102,12 @@ st.markdown(f"""
     div[data-baseweb="popover"] {{ background-color: {t_container} !important; border: 1px solid #D4AF37 !important; }}
     div[data-baseweb="popover"] li {{ color: {t_text} !important; }}
     div[data-baseweb="popover"] li:hover {{ background-color: rgba(212, 175, 55, 0.2) !important; color: #D4AF37 !important; }}
+    
+    /* Ensure popover button matches expander size */
+    div[data-testid="stPopover"] > button {{
+        min-height: 48px !important;
+        border-radius: 8px !important;
+    }}
 
     .stTextInput > div > div > input, .stChatInput textarea {{
         background-color: {t_input_bg} !important; border: 1px solid {t_border} !important;
@@ -119,7 +137,7 @@ st.markdown(f"""
     .stChatMessage[data-testid="stChatMessageAvatar"] {{ background-color: #111 !important; border: 1px solid #D4AF37 !important; color: #D4AF37 !important; }}
     
     div[data-testid="stContainer"] > div > div > div {{ background-color: {t_container}; border-radius: 8px; }}
-    div[data-testid="stExpander"] {{ background-color: {t_container} !important; border: 1px solid {t_border} !important; border-radius: 8px !important; }}
+    div[data-testid="stExpander"] {{ background-color: {t_container} !important; border: 1px solid {t_border} !important; border-radius: 8px !important; margin-bottom: 0px !important; }}
     
     button[data-baseweb="tab"] {{ color: {t_subtext} !important; font-weight: 600 !important; }}
     button[aria-selected="true"] {{ color: #D4AF37 !important; border-bottom: 2px solid #D4AF37 !important; }}
@@ -424,91 +442,98 @@ def main_app():
             st.error("Config Error: API Key missing.")
         
         st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("LOGOUT / TERMINATE UPLINK"):
+            db.logout(st.session_state.user["email"])
+            st.session_state.user = None
+            if "auth_token" in st.query_params:
+                del st.query_params["auth_token"]
+            st.rerun()
+
     # --- RESEARCH CORE ---
     if nav == "Research Core":
-        st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>RESEARCH CORE</h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
+        # 1. THE STICKY HEADER WRAPPER
+        sticky_header = st.container()
+        with sticky_header:
+            st.markdown("<span id='sticky-header-marker'></span>", unsafe_allow_html=True)
+            st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>RESEARCH CORE</h2>", unsafe_allow_html=True)
+            st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
 
-        # --- COMPACT RESEARCH PARAMETERS & VOICE DICTATION ---
-        param_col, mic_col = st.columns([0.8, 0.2])
-        
-        with param_col:
-            with st.expander("⚙️ Advanced Research Parameters & Grounding", expanded=False):
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
-                with c2:
-                    diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
-                with c3:
-                    space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
-                    
-                st.markdown("---")
-                sc1, sc2 = st.columns([1, 1])
-                with sc1:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    enable_search = st.toggle("🌐 Enable Web Grounding (Live Internet Search)")
-                with sc2:
-                    uploaded_pdf = st.file_uploader("📄 Upload Case File (PDF) for Context", type=["pdf"])
+            # --- COMPACT RESEARCH PARAMETERS & PERFECT ALIGNED VOICE UI ---
+            param_col, mic_col = st.columns([0.85, 0.15], vertical_alignment="center")
+            
+            with param_col:
+                with st.expander("⚙️ Advanced Research Parameters & Grounding", expanded=False):
+                    c1, c2, c3 = st.columns(3)
+                    with c1:
+                        tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
+                    with c2:
+                        diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
+                    with c3:
+                        space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
+                        
+                    st.markdown("---")
+                    sc1, sc2 = st.columns([1, 1])
+                    with sc1:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        enable_search = st.toggle("🌐 Enable Web Grounding (Live Internet Search)")
+                    with sc2:
+                        uploaded_pdf = st.file_uploader("📄 Upload Case File (PDF) for Context", type=["pdf"])
 
-        with mic_col:
-            # Hides the bulky audio widget inside a sleek, aligned popover button
-            with st.popover("🎙️ VOICE DICTATION", use_container_width=True):
-                st.markdown("<div style='text-align:center; font-size:0.9rem; color:#888;'>Speak your legal query</div>", unsafe_allow_html=True)
-                audio_data = st.audio_input("Record", label_visibility="collapsed")
+            with mic_col:
+                with st.popover("🎙️ VOICE", use_container_width=True):
+                    st.markdown("<div style='text-align:center; font-size:0.9rem; color:#888; margin-bottom:10px;'>Speak your legal query</div>", unsafe_allow_html=True)
+                    audio_data = st.audio_input("Record", label_visibility="collapsed")
+                    submit_audio = st.button("SEND AUDIO", use_container_width=True, type="secondary")
 
-        st.markdown("<br>", unsafe_allow_html=True)
+        # 2. NATIVE FULL-PAGE CHAT HISTORY (No fixed height)
+        history = db.get_history(st.session_state.user['email'])
+        for msg in history:
+            avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚖️"
+            with st.chat_message(msg['role'], avatar=avatar):
+                st.markdown(msg['content'])
 
-        # --- FIXED HEIGHT CHATBOX CONTAINER ---
-        # Reduced height prevents layout clipping and ensures visibility at 100% zoom
-        chat_box = st.container(height=420, border=False)
-        
-        with chat_box:
-            history = db.get_history(st.session_state.user['email'])
-            for msg in history:
-                avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚖️"
-                with st.chat_message(msg['role'], avatar=avatar):
-                    st.markdown(msg['content'])
-
-        # --- CHAT INPUT (RESTORED NATIVE BEHAVIOR) ---
-        # Freed from columns so it natively anchors to the bottom of the viewport
+        # 3. NATIVE BOTTOM CHAT INPUT
         query = st.chat_input("Enter legal query, section, or case citation...")
+        
+        is_audio_submission = audio_data is not None and submit_audio
 
-        if query or audio_data:
-            with chat_box:
-                # Show what user asked
-                with st.chat_message("user", avatar="🧑‍⚖️"):
-                    if query:
-                        st.markdown(query)
-                    if audio_data:
-                        st.audio(audio_data)
-                        if not query: query = "Please analyze this audio recording."
+        if query or is_audio_submission:
+            # Show what user asked
+            with st.chat_message("user", avatar="🧑‍⚖️"):
+                if query:
+                    st.markdown(query)
+                if is_audio_submission:
+                    st.audio(audio_data)
+                    if not query: query = "Please analyze this audio recording."
+            
+            db.save_message(st.session_state.user['email'], "user", query)
+
+            # Process AI Response natively inline
+            with st.chat_message("assistant", avatar="⚖️"):
+                pdf_extracted_text = None
+                if uploaded_pdf:
+                    with st.spinner("Reading Document..."):
+                        pdf_extracted_text = extract_pdf_text(uploaded_pdf)
                 
-                db.save_message(st.session_state.user['email'], "user", query)
+                audio_bytes = audio_data.getvalue() if is_audio_submission else None
 
-                # Process AI Response
-                with st.chat_message("assistant", avatar="⚖️"):
-                    pdf_extracted_text = None
-                    if uploaded_pdf:
-                        with st.spinner("Reading Document..."):
-                            pdf_extracted_text = extract_pdf_text(uploaded_pdf)
-                    
-                    audio_bytes = audio_data.getvalue() if audio_data else None
+                stream = get_gemini_stream(
+                    query, tone, diff, 
+                    st.session_state.user['institution'],
+                    pdf_text=pdf_extracted_text,
+                    audio_bytes=audio_bytes,
+                    enable_search=enable_search
+                )
+                
+                full_response = st.write_stream(stream)
+                db.save_message(st.session_state.user['email'], "assistant", full_response)
 
-                    # Streaming into the fixed chatbox prevents page jumps
-                    stream = get_gemini_stream(
-                        query, tone, diff, 
-                        st.session_state.user['institution'],
-                        pdf_text=pdf_extracted_text,
-                        audio_bytes=audio_bytes,
-                        enable_search=enable_search
-                    )
-                    
-                    full_response = st.write_stream(stream)
-                    db.save_message(st.session_state.user['email'], "assistant", full_response)
-
-                    if space != "None" and "❌" not in full_response:
-                        db.save_to_space(st.session_state.user['email'], space, query, full_response)
-                        st.toast(f"Archived to {space}", icon="📂")
+                if space != "None" and "❌" not in full_response:
+                    db.save_to_space(st.session_state.user['email'], space, query, full_response)
+                    st.toast(f"Archived to {space}", icon="📂")
+            
+            # Auto rerun forces the page to scroll down smoothly to the newest message
+            st.rerun()
 
         # Clear Logs Button
         if history:
