@@ -157,7 +157,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. CONFIGURATION & CREDENTIALS ---
-INTERNAL_API_KEY = "AIzaSyCW3LoC7mL4nS9BmMIRjIhS4ZBFp1jUq7E"
+# REMOVED HARDCODED LEAKED KEY. USE STREAMLIT SECRETS OR SIDEBAR INPUT.
 
 INSTITUTIONS = sorted([
     "National Law School of India University (NLSIU), Bangalore", "NALSAR University of Law, Hyderabad",
@@ -264,10 +264,20 @@ class DBHandler:
 db = DBHandler()
 
 # --- 5. AI ENGINE (IMPLEMENTING OFFICIAL GOOGLE-GENAI MODELS) ---
-def get_gemini_response(query, tone, difficulty, institution):
+def get_gemini_response(query, tone, difficulty, institution, sidebar_api_key=None):
+    # Secure API Key Handling
+    api_key = None
+    if sidebar_api_key:
+        api_key = sidebar_api_key
+    else:
+        try:
+            api_key = st.secrets["GEMINI_API_KEY"]
+        except (KeyError, FileNotFoundError):
+            return "❌ **System Config Error:** API Key missing. Please enter it securely in the sidebar or configure Streamlit Secrets."
+
     try:
         # Initialize the new SDK client
-        client = genai.Client(api_key=INTERNAL_API_KEY)
+        client = genai.Client(api_key=api_key)
     except Exception as e:
         return f"❌ **System Config Error:** {str(e)}"
     
@@ -362,6 +372,10 @@ def main_app():
         </div>
         """, unsafe_allow_html=True)
         
+        st.markdown("---")
+        st.markdown("#### 🔑 API Key Override")
+        user_api_key = st.text_input("Gemini API Key", type="password", help="Paste your new key here if you haven't set up Streamlit Secrets")
+
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("TERMINATE UPLINK"):
             st.session_state.user = None
@@ -400,7 +414,8 @@ def main_app():
                 
                 response = get_gemini_response(
                     query, tone, diff, 
-                    st.session_state.user['institution']
+                    st.session_state.user['institution'],
+                    user_api_key
                 )
                 
                 spinner_ph.empty()
