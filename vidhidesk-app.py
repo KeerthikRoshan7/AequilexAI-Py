@@ -615,12 +615,6 @@ def main_app():
         nav = st.radio("MODULES", ["⚖️ Research", "✍️ Drafting", "🌍 Translate", "📚 Vault"], label_visibility="collapsed")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        theme_icon = "☀️ Light Mode" if st.session_state.theme == "dark" else "🌙 Dark Mode"
-        if st.button(theme_icon, key="theme_toggle", type="secondary"):
-            toggle_theme()
-            st.rerun()
-
-        st.markdown("<br>", unsafe_allow_html=True)
         if "GEMINI_API_KEY" in st.secrets:
             st.markdown(f"""
             <div style='border: 1px solid {t_border}; padding: 12px; border-radius: 6px; background: transparent; margin-top:10px;'>
