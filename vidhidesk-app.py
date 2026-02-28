@@ -21,6 +21,7 @@ st.set_page_config(
 # Initialize Session States
 if "user" not in st.session_state: st.session_state.user = None
 if "theme" not in st.session_state: st.session_state.theme = "dark"
+if "current_workspace" not in st.session_state: st.session_state.current_workspace = {"id": 0, "name": "General Workspace"}
 
 # --- 2. DYNAMIC THEME SYSTEM (LIGHT/DARK) ---
 def toggle_theme():
@@ -47,21 +48,69 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
+    /* =========================================
+       1. STREAMLIT UI OVERRIDES (THE FIX)
+       ========================================= */
+    /* Hide top header, hamburger menu, deploy button, and decoration line */
+    header[data-testid="stHeader"] {{ display: none !important; }}
+    #MainMenu {{ visibility: hidden !important; }}
+    footer {{ visibility: hidden !important; }}
+    .stDeployButton {{ display: none !important; }}
+    div[data-testid="stDecoration"] {{ display: none !important; }}
+    
+    /* Fix layout padding since header is gone */
+    .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
+    section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
+
+    /* GLOBAL RESET & DYNAMIC THEME */
     .stApp {{
         background-color: {t_bg}; color: {t_text}; font-family: 'Inter', sans-serif;
         transition: background-color 0.4s ease, color 0.4s ease;
     }}
-    header[data-testid="stHeader"] {{ background: transparent !important; }}
     section[data-testid="stSidebar"] {{
         background-color: {t_container} !important; border-right: 1px solid {t_border} !important;
     }}
     h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; }}
     
-    .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
+    /* =========================================
+       2. SIDEBAR NAVIGATION MENU HACK
+       ========================================= */
+    /* Hide the radio button circles completely */
+    div[role="radiogroup"] div[data-baseweb="radio"] > div:first-of-type {{ display: none !important; }}
+    
+    /* Style the labels to look like a full-width clickable menu block */
+    div[role="radiogroup"] label {{
+        width: 100% !important; cursor: pointer !important;
+        margin-bottom: 6px !important; padding: 0 !important;
+        background: transparent !important; border: none !important;
+    }}
+    
+    /* Text styling inside the nav pills */
+    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p {{
+        font-size: 0.95rem !important; font-weight: 500 !important;
+        color: {t_subtext} !important; padding: 12px 15px !important;
+        border-radius: 8px !important; transition: all 0.2s ease !important;
+        margin: 0 !important;
+    }}
 
+    /* Hover effect for Nav Menu */
+    div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{
+        background-color: rgba(212, 175, 55, 0.08) !important; color: {t_text} !important;
+    }}
+
+    /* Active Selection effect (using advanced CSS :has) */
+    div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{
+        background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%) !important;
+        border-left: 3px solid #D4AF37 !important; color: #D4AF37 !important;
+        font-weight: 600 !important; border-radius: 0 8px 8px 0 !important;
+    }}
+
+    /* =========================================
+       3. COMPONENT STYLING
+       ========================================= */
     div[data-testid="stVerticalBlock"]:has(#sticky-header-marker):not(:has(div[data-testid="stVerticalBlock"]:has(#sticky-header-marker))) {{
-        position: sticky !important; top: 2rem !important; z-index: 999 !important;
-        background-color: {t_bg} !important; padding: 5px 0px 15px 0px !important;
+        position: sticky !important; top: 0rem !important; z-index: 999 !important;
+        background-color: {t_bg} !important; padding: 15px 0px 15px 0px !important;
         border-bottom: 1px solid {t_border} !important; margin-bottom: 20px !important;
     }}
 
@@ -135,12 +184,12 @@ st.markdown(f"""
 
 # --- 3. HARDCODED LISTS ---
 INSTITUTIONS = sorted([
-    "National Law School of India University (NLSIU), Bangalore", "NALSAR University of Law, Hyderabad",
+    "National Law School of India University (NLSIU)", "NALSAR University of Law",
     "National Law University, Delhi (NLUD)", "The West Bengal National University of Juridical Sciences (WBNUJS)",
-    "National Law University, Jodhpur (NLUJ)", "Hidayatullah National Law University (HNLU), Raipur",
-    "Tamil Nadu National Law University (TNNLU)", "Maharashtra National Law University (MNLU), Mumbai",
+    "National Law University, Jodhpur (NLUJ)", "Hidayatullah National Law University (HNLU)",
+    "Tamil Nadu National Law University (TNNLU)", "Maharashtra National Law University (MNLU)",
     "Faculty of Law, University of Delhi (DU)", "Government Law College (GLC), Mumbai", 
-    "Symbiosis Law School (SLS), Pune", "School of Law, Christ University", "Jindal Global Law School", "Other"
+    "Symbiosis Law School (SLS)", "School of Law, Christ University", "Jindal Global Law School", "Other"
 ]) 
 
 # --- 4. DATABASE MANAGER ---
@@ -158,10 +207,13 @@ class DBHandler:
         c.execute('''CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, password TEXT, name TEXT, institution TEXT, year TEXT)''')
         c.execute('''CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, role TEXT, content TEXT, timestamp DATETIME)''')
         c.execute('''CREATE TABLE IF NOT EXISTS spaces (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, category TEXT, query TEXT, response TEXT, timestamp DATETIME)''')
-        try:
-            c.execute('''ALTER TABLE users ADD COLUMN auth_token TEXT''')
-        except sqlite3.OperationalError:
-            pass
+        c.execute('''CREATE TABLE IF NOT EXISTS workspaces (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, name TEXT, created_at DATETIME)''')
+        try: c.execute('''ALTER TABLE users ADD COLUMN auth_token TEXT''')
+        except: pass
+        try: c.execute('''ALTER TABLE chats ADD COLUMN workspace_id INTEGER DEFAULT 0''')
+        except: pass
+        try: c.execute('''ALTER TABLE spaces ADD COLUMN workspace_id INTEGER DEFAULT 0''')
+        except: pass
         conn.commit()
         conn.close()
 
@@ -192,7 +244,6 @@ class DBHandler:
                 conn.commit()
             conn.close()
             return {"email": email, "name": user[0], "institution": user[1], "year": user[2], "token": token}
-        
         conn.close()
         return None
 
@@ -211,34 +262,34 @@ class DBHandler:
         conn.commit()
         conn.close()
 
-    def save_message(self, email, role, content):
+    def save_message(self, email, role, content, workspace_id=0):
         conn = self.get_connection()
-        conn.execute("INSERT INTO chats (email, role, content, timestamp) VALUES (?, ?, ?, ?)", (email, role, content, datetime.now()))
+        conn.execute("INSERT INTO chats (email, role, content, timestamp, workspace_id) VALUES (?, ?, ?, ?, ?)", (email, role, content, datetime.now(), workspace_id))
         conn.commit()
         conn.close()
 
-    def get_history(self, email):
+    def get_history(self, email, workspace_id=0):
         conn = self.get_connection()
-        cur = conn.execute("SELECT role, content FROM chats WHERE email=? ORDER BY id ASC", (email,))
+        cur = conn.execute("SELECT role, content FROM chats WHERE email=? AND workspace_id=? ORDER BY id ASC", (email, workspace_id))
         data = [{"role": row[0], "content": row[1]} for row in cur.fetchall()]
         conn.close()
         return data
 
-    def clear_history(self, email):
+    def clear_history(self, email, workspace_id=0):
         conn = self.get_connection()
-        conn.execute("DELETE FROM chats WHERE email=?", (email,))
+        conn.execute("DELETE FROM chats WHERE email=? AND workspace_id=?", (email, workspace_id))
         conn.commit()
         conn.close()
 
-    def save_to_space(self, email, category, query, response):
+    def save_to_space(self, email, category, query, response, workspace_id=0):
         conn = self.get_connection()
-        conn.execute("INSERT INTO spaces (email, category, query, response, timestamp) VALUES (?, ?, ?, ?, ?)", (email, category, query, response, datetime.now()))
+        conn.execute("INSERT INTO spaces (email, category, query, response, timestamp, workspace_id) VALUES (?, ?, ?, ?, ?, ?)", (email, category, query, response, datetime.now(), workspace_id))
         conn.commit()
         conn.close()
 
-    def get_space_items(self, email, category):
+    def get_space_items(self, email, category, workspace_id=0):
         conn = self.get_connection()
-        cur = conn.execute("SELECT id, query, response, timestamp FROM spaces WHERE email=? AND category=? ORDER BY id DESC", (email, category))
+        cur = conn.execute("SELECT id, query, response, timestamp FROM spaces WHERE email=? AND category=? AND workspace_id=? ORDER BY id DESC", (email, category, workspace_id))
         data = [{"id": r[0], "query": r[1], "response": r[2], "timestamp": r[3]} for r in cur.fetchall()]
         conn.close()
         return data
@@ -248,6 +299,21 @@ class DBHandler:
         conn.execute("DELETE FROM spaces WHERE id=?", (item_id,))
         conn.commit()
         conn.close()
+
+    def create_workspace(self, email, name):
+        conn = self.get_connection()
+        cur = conn.execute("INSERT INTO workspaces (email, name, created_at) VALUES (?, ?, ?)", (email, name, datetime.now()))
+        new_id = cur.lastrowid
+        conn.commit()
+        conn.close()
+        return new_id
+
+    def get_workspaces(self, email):
+        conn = self.get_connection()
+        cur = conn.execute("SELECT id, name FROM workspaces WHERE email=? ORDER BY created_at DESC", (email,))
+        data = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
+        conn.close()
+        return data
 
 db = DBHandler()
 
@@ -458,7 +524,7 @@ def login_page():
                         st.warning("Please fill out all required fields.")
 
             with tab_guest:
-                st.markdown("<br><p style='text-align: center;'>Temporary access mode. Data will be tied to a temporary session.</p><br>", unsafe_allow_html=True)
+                st.markdown("<br><p style='text-align: center; font-size: 0.9rem;'>Temporary access mode. Data will be tied to a temporary session.</p><br>", unsafe_allow_html=True)
                 if st.button("CONTINUE AS GUEST", type="secondary", use_container_width=True):
                     guest_email = f"guest_{int(time.time())}@vidhidesk.local"
                     st.session_state.user = {
@@ -472,6 +538,34 @@ def main_app():
         st.markdown(f"<span style='color: #D4AF37; font-size: 0.8rem; font-weight: 500;'>{st.session_state.user['institution']}</span>", unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
+        
+        # --- WORKSPACE SELECTOR UI ---
+        st.markdown(f"<div style='font-size: 0.75rem; color: {t_subtext}; margin-bottom: 5px; font-weight: 600; letter-spacing: 1px;'>ACTIVE CASE FOLDER</div>", unsafe_allow_html=True)
+        
+        workspaces = [{"id": 0, "name": "General Workspace"}] + db.get_workspaces(st.session_state.user['email'])
+        ws_names = [w['name'] for w in workspaces]
+        
+        current_index = 0
+        for i, w in enumerate(workspaces):
+            if w['id'] == st.session_state.current_workspace['id']:
+                current_index = i
+                
+        selected_ws_name = st.selectbox("Workspace", ws_names, index=current_index, label_visibility="collapsed")
+        for w in workspaces:
+            if w['name'] == selected_ws_name and st.session_state.current_workspace['id'] != w['id']:
+                st.session_state.current_workspace = w
+                st.rerun()
+        
+        with st.popover("➕ Create Case Folder", use_container_width=True):
+            new_ws_name = st.text_input("Client/Case Name", placeholder="e.g., State vs Sharma")
+            if st.button("Create Folder", use_container_width=True):
+                if new_ws_name:
+                    new_id = db.create_workspace(st.session_state.user['email'], new_ws_name)
+                    st.session_state.current_workspace = {"id": new_id, "name": new_ws_name}
+                    st.rerun()
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
         nav = st.radio("MODULES", ["Research Core", "Drafting Studio", "Translation Desk", "Knowledge Vault"], label_visibility="collapsed")
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -480,20 +574,6 @@ def main_app():
             toggle_theme()
             st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if "GEMINI_API_KEY" in st.secrets:
-            st.markdown(f"""
-            <div style='border: 1px solid {t_border}; padding: 12px; border-radius: 6px; background: transparent; margin-top:10px;'>
-                <div style='display:flex; align-items:center; margin-bottom:5px;'>
-                    <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
-                    <span style='color: #D4AF37; font-weight:600;'>System Online</span>
-                </div>
-                <div style='font-size: 0.7rem; color: {t_subtext};'>Engine: GenAI 2.5 Streaming</div>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.error("Config Error: API Key missing.")
-        
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("LOGOUT / TERMINATE UPLINK"):
             db.logout(st.session_state.user["email"])
@@ -539,7 +619,7 @@ def main_app():
                     audio_data = st.audio_input("Record", label_visibility="collapsed")
                     submit_audio = st.button("SEND AUDIO", use_container_width=True, type="secondary")
 
-        history = db.get_history(st.session_state.user['email'])
+        history = db.get_history(st.session_state.user['email'], workspace_id=st.session_state.current_workspace['id'])
         for msg in history:
             avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚖️"
             with st.chat_message(msg['role'], avatar=avatar):
@@ -555,7 +635,7 @@ def main_app():
                     st.audio(audio_data)
                     if not query: query = "Please analyze this audio recording."
             
-            db.save_message(st.session_state.user['email'], "user", query)
+            db.save_message(st.session_state.user['email'], "user", query, workspace_id=st.session_state.current_workspace['id'])
 
             with st.chat_message("assistant", avatar="⚖️"):
                 pdf_extracted_text = None
@@ -572,10 +652,10 @@ def main_app():
                 )
                 
                 full_response = st.write_stream(stream)
-                db.save_message(st.session_state.user['email'], "assistant", full_response)
+                db.save_message(st.session_state.user['email'], "assistant", full_response, workspace_id=st.session_state.current_workspace['id'])
 
                 if space != "None" and "❌" not in full_response:
-                    db.save_to_space(st.session_state.user['email'], space, query, full_response)
+                    db.save_to_space(st.session_state.user['email'], space, query, full_response, workspace_id=st.session_state.current_workspace['id'])
                     st.toast(f"Archived to {space}", icon="📂")
             st.rerun()
 
@@ -583,7 +663,7 @@ def main_app():
             c1, c2 = st.columns([0.85, 0.15])
             with c2:
                 if st.button("CLEAR LOGS", type="secondary"):
-                    db.clear_history(st.session_state.user['email'])
+                    db.clear_history(st.session_state.user['email'], workspace_id=st.session_state.current_workspace['id'])
                     st.rerun()
 
     # --- DRAFTING STUDIO ---
@@ -603,13 +683,7 @@ def main_app():
             ])
             
             facts = st.text_area("Client Facts & Details (Optional if PDF provided)", height=150, placeholder="E.g., Client name is Rahul. Tenant hasn't paid rent of Rs 50,000...")
-            
-            # TIER LOGIC APPLIED TO DRAFTING PDFS
-            if st.session_state.user.get('tier') == 'pro':
-                uploaded_draft_pdf = st.file_uploader("📄 Upload Reference Document / Old Contract (PDF)", type=["pdf"], key="draft_pdf")
-            else:
-                st.info("⭐ Upgrade to Pro to draft from existing PDFs")
-                uploaded_draft_pdf = None
+            uploaded_draft_pdf = st.file_uploader("📄 Upload Reference Document / Old Contract (PDF)", type=["pdf"], key="draft_pdf")
             
             if st.button("GENERATE DRAFT", use_container_width=True):
                 if not facts and not uploaded_draft_pdf:
@@ -649,13 +723,7 @@ def main_app():
             target_lang = st.selectbox("Translate To", ["Hindi", "Tamil", "Marathi", "Bengali", "Telugu", "Gujarati", "Malayalam", "English"])
             
             source_text = st.text_area("Source Text (Optional if PDF provided)", height=150, placeholder="Paste legal document text here...")
-            
-            # TIER LOGIC APPLIED TO TRANSLATION PDFS
-            if st.session_state.user.get('tier') == 'pro':
-                uploaded_trans_pdf = st.file_uploader("📄 Upload Document to Translate (PDF)", type=["pdf"], key="trans_pdf")
-            else:
-                st.info("⭐ Upgrade to Pro to translate whole PDFs")
-                uploaded_trans_pdf = None
+            uploaded_trans_pdf = st.file_uploader("📄 Upload Document to Translate (PDF)", type=["pdf"], key="trans_pdf")
             
             if st.button("TRANSLATE", use_container_width=True):
                 if not source_text and not uploaded_trans_pdf:
@@ -684,7 +752,6 @@ def main_app():
                         )
 
     elif nav == "Knowledge Vault":
-        # Dynamic vault title based on workspace
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>KNOWLEDGE VAULT <span style='font-size:0.5em; color:{t_subtext};'>[{st.session_state.current_workspace['name']}]</span></h2>", unsafe_allow_html=True)
         st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
         
@@ -692,10 +759,9 @@ def main_app():
         for tab, cat in zip([t1, t2, t3], ["Research", "Paper", "Study"]):
             with tab:
                 st.markdown("<br>", unsafe_allow_html=True)
-                # FETCH ONLY SPACES FROM ACTIVE WORKSPACE
                 items = db.get_space_items(st.session_state.user['email'], cat, workspace_id=st.session_state.current_workspace['id'])
                 if not items:
-                    st.info(f"Sector '{cat}' is empty in this Workspace.", icon="ℹ️")
+                    st.info(f"Sector '{cat}' is empty in this folder.", icon="ℹ️")
                 else:
                     for item in items:
                         with st.expander(f"📌 {item['timestamp'][:16]} | {item['query'][:60]}..."):
