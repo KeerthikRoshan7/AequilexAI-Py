@@ -1,7 +1,6 @@
 import streamlit as st
 from google import genai
 from google.genai import types
-import sqlite3
 import hashlib
 import time
 import uuid
@@ -21,92 +20,64 @@ st.set_page_config(
 
 # Initialize Session States
 if "user" not in st.session_state: st.session_state.user = None
-if "theme" not in st.session_state: st.session_state.theme = "dark"
 if "current_workspace" not in st.session_state: st.session_state.current_workspace = {"id": 0, "name": "General Workspace"}
 
-# --- 2. DYNAMIC THEME SYSTEM (LIGHT/DARK) ---
-def toggle_theme():
-    st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
-
-if st.session_state.theme == "dark":
-    t_bg = "#050505"
-    t_container = "#0A0A0B"
-    t_text = "#E2E8F0"
-    t_subtext = "#94A3B8"
-    t_border = "rgba(212, 175, 55, 0.2)"
-    t_input_bg = "#0F0F11"
-    t_chat_bg = "rgba(255, 255, 255, 0.02)"
-else:
-    # Slightly softer light background for better contrast
-    t_bg = "#F8FAFC" 
-    t_container = "#FFFFFF"
-    t_text = "#0F172A"
-    t_subtext = "#64748B"
-    t_border = "rgba(212, 175, 55, 0.4)"
-    t_input_bg = "#FFFFFF"
-    t_chat_bg = "rgba(0, 0, 0, 0.02)"
+# --- 2. OBSIDIAN, LIQUID GOLD & CYBER PURPLE THEME ---
+t_bg = "#050505"
+t_container = "#0A0A0B"
+t_text = "#E2E8F0"
+t_subtext = "#94A3B8"
+t_border = "rgba(212, 175, 55, 0.15)"
+t_border_cyber = "rgba(139, 92, 246, 0.3)"
+t_input_bg = "#0F0F11"
+t_chat_bg = "rgba(255, 255, 255, 0.02)"
 
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
     /* =========================================
-       1. STREAMLIT UI OVERRIDES & THEME ENFORCEMENT
+       1. CORE UI ANIMATIONS & STREAMLIT OVERRIDES
        ========================================= */
-    /* KEEP HEADER ALIVE FOR THE SIDEBAR TOGGLE ARROW */
-    header[data-testid="stHeader"] {{
-        background: transparent !important;
-        box-shadow: none !important;
-    }}
+    @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+    @keyframes pulseGlow {{ 0% {{ box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05); }} 50% {{ box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.15); }} 100% {{ box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05); }} }}
+
+    .stApp {{ animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }}
     
-    /* HIDE ONLY THE RIGHT-SIDE CLUTTER */
-    [data-testid="stHeaderActionElements"], #MainMenu, .stDeployButton {{
-        display: none !important;
-    }}
-    
-    footer {{ visibility: hidden !important; }}
-    div[data-testid="stDecoration"] {{ display: none !important; }}
+    header[data-testid="stHeader"] {{ background: transparent !important; box-shadow: none !important; }}
+    [data-testid="stHeaderActionElements"], #MainMenu, .stDeployButton, footer, div[data-testid="stDecoration"] {{ display: none !important; }}
     
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
 
-    /* FORCE LIGHT/DARK THEME ACROSS ALL HIDDEN CONTAINERS */
+    /* FORCE OBSIDIAN THEME ACROSS CONTAINERS */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
-        background-color: {t_bg} !important; 
-        color: {t_text} !important; 
-        font-family: 'Inter', sans-serif;
-        transition: background-color 0.4s ease, color 0.4s ease;
+        background-color: {t_bg} !important; color: {t_text} !important; font-family: 'Inter', sans-serif;
     }}
     
     section[data-testid="stSidebar"] {{
         background-color: {t_container} !important; border-right: 1px solid {t_border} !important;
     }}
-    h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; }}
+    h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; transition: color 0.3s ease; }}
     
-    /* FIX: LIGHT MODE BOTTOM CHAT CONTAINER BLACK BOX OVERRIDE */
     div[data-testid="stBottom"], div[data-testid="stBottomBlockContainer"] {{
-        background-color: {t_bg} !important; 
-        background: {t_bg} !important;
-        transition: background-color 0.4s ease;
+        background-color: {t_bg} !important; background: {t_bg} !important;
     }}
-    div[data-testid="stBottom"] > div {{
-        background-color: transparent !important;
-    }}
+    div[data-testid="stBottom"] > div {{ background-color: transparent !important; }}
 
-    /* FIX: GHOST TEXT / PLACEHOLDER VISIBILITY */
     input::placeholder, textarea::placeholder, .stChatInput textarea::placeholder {{
-        color: {t_text} !important;
-        opacity: 0.55 !important;
+        color: {t_text} !important; opacity: 0.45 !important; transition: opacity 0.3s ease;
     }}
+    input:focus::placeholder, textarea:focus::placeholder {{ opacity: 0.7 !important; }}
     
     /* =========================================
-       2. TABS GRID - STRICT EQUAL RECTANGLES
+       2. SIDEBAR TABS - STRICT CENTERED EQUAL GRID
        ========================================= */
     div[role="radiogroup"] {{
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
-        grid-auto-rows: 48px !important; /* STRICT HEIGHT */
-        gap: 6px !important; 
+        grid-auto-rows: 48px !important;
+        gap: 8px !important; 
         width: 100% !important;
         align-items: stretch !important;
     }}
@@ -114,48 +85,47 @@ st.markdown(f"""
     div[role="radiogroup"] label > div:first-child:not([data-testid="stMarkdownContainer"]),
     div[role="radiogroup"] label div[data-baseweb="radio"],
     div[role="radiogroup"] label input {{ 
-        display: none !important; 
-        width: 0 !important; height: 0 !important; opacity: 0 !important;
-        position: absolute !important;
+        display: none !important; width: 0 !important; height: 0 !important; opacity: 0 !important; position: absolute !important;
     }}
     
     div[role="radiogroup"] label {{
         width: 100% !important; height: 100% !important;
-        margin: 0 !important; padding: 0 !important;
-        cursor: pointer !important;
+        margin: 0 !important; padding: 0 !important; cursor: pointer !important;
         display: flex !important; align-items: center !important; justify-content: center !important;
         background-color: {t_container} !important;
         border: 1px solid {t_border} !important;
-        border-radius: 0px !important; /* FLAT WIN10 METRO */
+        border-radius: 4px !important;
         box-sizing: border-box !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
     
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] {{
-        width: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important;
+        width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important;
     }}
     
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.85rem !important; font-weight: 600 !important;
-        color: {t_subtext} !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1 !important; text-align: center !important;
+        font-size: 0.85rem !important; font-weight: 600 !important; color: {t_subtext} !important; 
+        margin: 0 !important; padding: 0 !important; line-height: 1 !important; text-align: center !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        width: 100% !important; height: 100% !important; transition: color 0.3s ease !important;
     }}
 
     div[role="radiogroup"] label:hover {{
-        background-color: rgba(212, 175, 55, 0.08) !important; 
-        border-color: rgba(212, 175, 55, 0.4) !important;
+        background-color: rgba(139, 92, 246, 0.05) !important; 
+        border-color: {t_border_cyber} !important;
+        transform: translateY(-2px);
     }}
-    div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{ color: {t_text} !important; }}
+    div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{ color: #FFF !important; }}
 
     div[role="radiogroup"] label:has(input[aria-checked="true"]) {{
-        background-color: {t_bg} !important; border-color: {t_border} !important; 
-        border-left: 4px solid #D4AF37 !important;
-        box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.05) !important;
+        background-color: {t_bg} !important; border-color: {t_border_cyber} !important; 
+        border-left: 4px solid #8B5CF6 !important; /* Cyber Purple Active Line */
+        animation: pulseGlow 3s infinite;
     }}
-    div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{ color: #D4AF37 !important; }}
+    div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{ color: #D946EF !important; }}
 
     /* =========================================
-       3. COMPONENT STYLING
+       3. COMPONENT STYLING & SMOOTHING
        ========================================= */
     div[data-testid="stVerticalBlock"]:has(#sticky-header-marker):not(:has(div[data-testid="stVerticalBlock"]:has(#sticky-header-marker))) {{
         position: sticky !important; top: 0rem !important; z-index: 999 !important;
@@ -163,7 +133,7 @@ st.markdown(f"""
         border-bottom: 1px solid {t_border} !important; margin-bottom: 20px !important;
     }}
 
-    .vidhi-title-container {{ width: 100%; text-align: center; padding-top: 3vh; padding-bottom: 2rem; }}
+    .vidhi-title-container {{ width: 100%; text-align: center; padding-top: 3vh; padding-bottom: 2rem; animation: fadeIn 0.8s ease-out; }}
     .vidhi-title {{
         font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0 auto;
         background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%);
@@ -171,59 +141,61 @@ st.markdown(f"""
         letter-spacing: 0.15em; white-space: nowrap !important; font-weight: 700 !important;
         text-shadow: 0px 4px 20px rgba(212, 175, 55, 0.2);
     }}
-    .temple-divider {{ height: 1px; width: 200px; background: linear-gradient(90deg, transparent, #D4AF37, transparent); margin: 15px auto; }}
+    .temple-divider {{ height: 1px; width: 200px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent); margin: 15px auto; }}
     .vidhi-subtitle {{ color: {t_subtext}; font-size: 0.8rem; letter-spacing: 4px; text-transform: uppercase; }}
     p, label, span, div {{ color: {t_text}; }}
 
     ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
     ::-webkit-scrollbar-track {{ background: transparent; }}
-    ::-webkit-scrollbar-thumb {{ background: rgba(212, 175, 55, 0.5); border-radius: 4px; }}
-    ::-webkit-scrollbar-thumb:hover {{ background: rgba(212, 175, 55, 0.8); }}
-
-    div[data-testid="InputInstructions"] {{ display: none !important; }}
-    div[data-baseweb="select"] {{ cursor: pointer !important; }}
-    div[data-baseweb="select"] * {{ cursor: pointer !important; }}
-    div[data-baseweb="select"] input {{ caret-color: transparent !important; cursor: pointer !important; }}
+    ::-webkit-scrollbar-thumb {{ background: rgba(139, 92, 246, 0.4); border-radius: 4px; transition: background 0.3s; }}
+    ::-webkit-scrollbar-thumb:hover {{ background: rgba(139, 92, 246, 0.8); }}
 
     div[data-baseweb="select"] > div {{
         background-color: {t_input_bg} !important; border: 1px solid {t_border} !important;
-        color: {t_text} !important; border-radius: 6px !important;
+        color: {t_text} !important; border-radius: 6px !important; transition: all 0.3s ease !important;
     }}
-    div[data-baseweb="select"] > div:hover {{ border-color: #D4AF37 !important; }}
-    div[data-baseweb="popover"] {{ background-color: {t_container} !important; border: 1px solid #D4AF37 !important; }}
-    div[data-baseweb="popover"] li {{ color: {t_text} !important; }}
-    div[data-baseweb="popover"] li:hover {{ background-color: rgba(212, 175, 55, 0.2) !important; color: #D4AF37 !important; }}
+    div[data-baseweb="select"] > div:hover, div[data-baseweb="select"] > div:focus-within {{ border-color: #8B5CF6 !important; box-shadow: 0 0 10px rgba(139, 92, 246, 0.1) !important; }}
     
-    div[data-testid="stPopover"] > button {{ min-height: 48px !important; border-radius: 8px !important; }}
+    div[data-baseweb="popover"] {{ background-color: {t_container} !important; border: 1px solid #8B5CF6 !important; transition: all 0.3s ease; }}
+    div[data-baseweb="popover"] li:hover {{ background-color: rgba(139, 92, 246, 0.15) !important; color: #D946EF !important; }}
+    
+    div[data-testid="stPopover"] > button {{ min-height: 48px !important; border-radius: 8px !important; transition: all 0.3s ease !important; }}
 
     .stTextInput > div > div > input, .stChatInput textarea, .stTextArea textarea {{
         background-color: {t_input_bg} !important; border: 1px solid {t_border} !important;
         color: {t_text} !important; border-radius: 6px !important; padding: 10px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
     .stTextInput > div > div > input:focus, .stChatInput textarea:focus, .stTextArea textarea:focus {{
-        border-color: #D4AF37 !important; box-shadow: 0 0 10px rgba(212, 175, 55, 0.2) !important;
+        border-color: #8B5CF6 !important; box-shadow: 0 0 15px rgba(139, 92, 246, 0.2) !important;
     }}
 
     .stButton > button {{
-        background: linear-gradient(135deg, #1A1500 0%, #2A2205 100%) !important;
+        background: linear-gradient(135deg, #0A0A0B 0%, #111 100%) !important;
         color: #D4AF37 !important; font-family: 'Cinzel', serif !important; font-weight: 600 !important;
         border: 1px solid rgba(212, 175, 55, 0.5) !important; border-radius: 4px !important;
-        text-transform: uppercase; letter-spacing: 1.5px; width: 100%; transition: all 0.3s ease !important;
+        text-transform: uppercase; letter-spacing: 1.5px; width: 100%; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
     .stButton > button:hover {{
-        background: linear-gradient(135deg, #2A2205 0%, #3D320A 100%) !important;
-        border-color: #D4AF37 !important; color: #FFF !important; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2) !important;
+        background: linear-gradient(135deg, #111 0%, #1a1a1a 100%) !important;
+        border-color: #D946EF !important; color: #FFF !important; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
+        transform: translateY(-2px);
     }}
     button[kind="secondary"] {{ background: transparent !important; border: 1px solid {t_subtext} !important; color: {t_subtext} !important; }}
-    button[kind="secondary"]:hover {{ border-color: #D4AF37 !important; color: #D4AF37 !important; }}
+    button[kind="secondary"]:hover {{ border-color: #8B5CF6 !important; color: #D946EF !important; }}
 
     .stChatMessage {{
         background-color: {t_chat_bg} !important; border: 1px solid {t_border} !important;
         border-radius: 12px !important; padding: 1.2rem !important; margin-bottom: 1rem !important;
+        animation: fadeIn 0.4s ease-out; transition: transform 0.2s ease, border-color 0.3s ease;
     }}
-    .stChatMessage[data-testid="stChatMessageAvatar"] {{ background-color: #111 !important; border: 1px solid #D4AF37 !important; color: #D4AF37 !important; }}
+    .stChatMessage:hover {{ border-color: rgba(212, 175, 55, 0.3) !important; }}
+    .stChatMessage[data-testid="stChatMessageAvatar"] {{ background-color: #0A0A0B !important; border: 1px solid #D4AF37 !important; color: #D4AF37 !important; }}
     
     div[data-testid="stContainer"] > div > div > div {{ background-color: {t_container}; border-radius: 8px; }}
+    
+    button[data-baseweb="tab"] {{ color: {t_subtext} !important; font-weight: 600 !important; transition: all 0.3s ease !important; }}
+    button[aria-selected="true"] {{ color: #D946EF !important; border-bottom: 2px solid #D946EF !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -351,15 +323,12 @@ def extract_pdf_text(uploaded_file):
 def generate_word_document(query, response, title="VidhiDesk Legal Document"):
     doc = Document()
     doc.add_heading(title, 0)
-    
     if query:
         doc.add_heading('Context / Facts:', level=1)
         doc.add_paragraph(query)
-    
     doc.add_heading('Legal Analysis:', level=1)
     clean_response = response.replace("**", "").replace("*", "")
     doc.add_paragraph(clean_response)
-    
     bio = io.BytesIO()
     doc.save(bio)
     return bio.getvalue()
@@ -368,11 +337,6 @@ def generate_word_document(query, response, title="VidhiDesk Legal Document"):
 def get_gemini_stream(query, tone, difficulty, institution, pdf_text=None, audio_bytes=None, enable_search=False, strict_citation=False):
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
-    except Exception:
-        yield "❌ **System Config Error:** API Key missing in Streamlit Secrets."
-        return
-
-    try:
         client = genai.Client(api_key=api_key)
     except Exception as e:
         yield f"❌ **System Config Error:** {str(e)}"
@@ -383,51 +347,34 @@ def get_gemini_stream(query, tone, difficulty, institution, pdf_text=None, audio
     TONE: {tone} | DEPTH: {difficulty}
     MANDATE: Prioritize Indian Statutes (BNS, BNSS, BSA, Constitution). Cite relevant Case Laws. Use Markdown.
     """
-    
     if strict_citation:
         sys_instruction += "\nCRITICAL RULE (STRICT CITATION MODE): You MUST ONLY cite real, verifiable Indian case laws. Provide the exact year, volume, and court. Under NO circumstances should you invent or hallucinate a case. If you cannot find a verifiable precedent, explicitly state 'No verifiable case law found for this specific query'."
 
     contents = [sys_instruction]
-    
-    if pdf_text:
-        contents.append(f"\n[DOCUMENT CONTEXT UPLOADED BY USER]:\n{pdf_text[:15000]}\n\n(Base your answer heavily on the document above if relevant).")
-        
-    if audio_bytes:
-        # FIX: Use the SDK's types.Part.from_bytes method instead of a raw dictionary
-        contents.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
-        
-    if query:
-        contents.append(f"\nUSER QUERY: {query}")
+    if pdf_text: contents.append(f"\n[DOCUMENT CONTEXT UPLOADED BY USER]:\n{pdf_text[:15000]}\n\n(Base your answer heavily on the document above if relevant).")
+    if audio_bytes: contents.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
+    if query: contents.append(f"\nUSER QUERY: {query}")
 
     config = types.GenerateContentConfig(temperature=0.1 if strict_citation else 0.3)
-    if enable_search:
-        config.tools = [{"google_search": {}}]
+    if enable_search: config.tools = [{"google_search": {}}]
 
     models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash']
-    
     for model_name in models_to_try:
         try:
-            response_stream = client.models.generate_content_stream(
-                model=model_name,
-                contents=contents,
-                config=config
-            )
+            response_stream = client.models.generate_content_stream(model=model_name, contents=contents, config=config)
             for chunk in response_stream:
-                if chunk.text:
-                    yield chunk.text
+                if chunk.text: yield chunk.text
             return 
         except Exception as e:
             if "API_KEY_INVALID" in str(e) or "not found" in str(e).lower():
                 yield "❌ **Authentication Failed:** API key invalid or revoked."
                 return
             continue 
-
     yield "❌ **System Unavailable:** AI servers failed to respond."
 
 def get_drafting_stream(doc_type, facts, institution, pdf_text=None):
     try:
-        api_key = st.secrets["GEMINI_API_KEY"]
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
         yield "❌ **System Config Error.**"
         return
@@ -435,64 +382,43 @@ def get_drafting_stream(doc_type, facts, institution, pdf_text=None):
     sys_instruction = f"""
     ROLE: You are a Senior Legal Draftsman at {institution} in India.
     TASK: Draft a professional, court-ready '{doc_type}'.
-    MANDATE: 
-    - Use strict, formal Indian legal terminology.
-    - Format properly using clear headings and numbered paragraphs.
-    - Use placeholders like [CLIENT NAME], [DATE], [AMOUNT] for missing facts.
-    - Base the entire draft strictly on the facts and documents provided below.
+    MANDATE: Use strict, formal Indian legal terminology. Format properly using clear headings and numbered paragraphs. Use placeholders like [CLIENT NAME], [DATE], [AMOUNT] for missing facts. Base the entire draft strictly on the facts and documents provided.
     """
-    
     contents = [sys_instruction]
-    if pdf_text:
-        contents.append(f"\n[REFERENCE DOCUMENT UPLOADED]:\n{pdf_text[:15000]}\n\n(Use this document for context, references, or template structure).")
-    if facts:
-        contents.append(f"\n[CLIENT FACTS]:\n{facts}")
+    if pdf_text: contents.append(f"\n[REFERENCE DOCUMENT UPLOADED]:\n{pdf_text[:15000]}")
+    if facts: contents.append(f"\n[CLIENT FACTS]:\n{facts}")
         
     try:
         response_stream = client.models.generate_content_stream(model='gemini-2.5-flash', contents=contents)
         for chunk in response_stream:
             if chunk.text: yield chunk.text
-    except Exception as e:
-        yield f"❌ **Drafting Engine Error:** {str(e)}"
+    except Exception as e: yield f"❌ **Drafting Engine Error:** {str(e)}"
 
 def get_translation_stream(text, target_lang, institution, pdf_text=None):
     try:
-        api_key = st.secrets["GEMINI_API_KEY"]
-        client = genai.Client(api_key=api_key)
+        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception:
         yield "❌ **System Config Error.**"
         return
         
-    sys_instruction = f"""
-    ROLE: You are an expert Legal Translator at {institution}.
-    TASK: Translate the provided legal document/text accurately into highly formal {target_lang}.
-    MANDATE: 
-    - Preserve all legal meanings, liabilities, and nuances perfectly.
-    - Maintain the original formatting and paragraph structure.
-    - If there are Latin legal maxims, keep them in Latin but add the translated meaning in brackets.
-    """
-    
+    sys_instruction = f"ROLE: You are an expert Legal Translator at {institution}. TASK: Translate the provided legal document/text accurately into highly formal {target_lang}. Preserve all legal meanings perfectly. Keep Latin maxims in Latin with translated meanings in brackets."
     contents = [sys_instruction]
-    if pdf_text:
-        contents.append(f"\n[DOCUMENT TO TRANSLATE]:\n{pdf_text[:15000]}")
-    if text:
-        contents.append(f"\n[ADDITIONAL TEXT TO TRANSLATE]:\n{text}")
+    if pdf_text: contents.append(f"\n[DOCUMENT TO TRANSLATE]:\n{pdf_text[:15000]}")
+    if text: contents.append(f"\n[ADDITIONAL TEXT TO TRANSLATE]:\n{text}")
         
     try:
         response_stream = client.models.generate_content_stream(model='gemini-2.5-flash', contents=contents)
         for chunk in response_stream:
             if chunk.text: yield chunk.text
-    except Exception as e:
-        yield f"❌ **Translation Engine Error:** {str(e)}"
-
+    except Exception as e: yield f"❌ **Translation Engine Error:** {str(e)}"
 
 # --- 7. UI LOGIC ---
 def login_page():
     st.markdown("""
         <div class='vidhi-title-container'>
             <h1 class='vidhi-title'>VIDHIDESK</h1>
-            <div class='temple-divider'></div>
-            <div class='vidhi-subtitle'>Intelligent Legal Infrastructure</div>
+            <div class='temple-divider' style='background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
+            <div class='vidhi-subtitle' style='color: #D946EF;'>Intelligent Legal Infrastructure</div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -516,8 +442,7 @@ def login_page():
                             if remember_me and user["token"]:
                                 st.query_params["auth_token"] = user["token"]
                             st.rerun()
-                        else:
-                            st.error("Authentication Failed: Invalid token or key.")
+                        else: st.error("Authentication Failed: Invalid token or key.")
                             
             with tab_reg:
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -530,30 +455,44 @@ def login_page():
                 if st.button("REGISTER ACCOUNT", use_container_width=True):
                     if r_name and r_email and r_pwd:
                         success = db.register_user(r_email, r_pwd, r_name, r_inst, r_year)
-                        if success:
-                            st.success("Registration Successful! Please navigate to Login.")
-                        else:
-                            st.error("Error: Email already registered in the system.")
-                    else:
-                        st.warning("Please fill out all required fields.")
+                        if success: st.success("Registration Successful! Please navigate to Login.")
+                        else: st.error("Error: Email already registered in the system.")
+                    else: st.warning("Please fill out all required fields.")
 
             with tab_guest:
                 st.markdown("<br><p style='text-align: center; font-size: 0.9rem;'>Temporary access mode. Data will be tied to a temporary session.</p><br>", unsafe_allow_html=True)
                 if st.button("CONTINUE AS GUEST", type="secondary", use_container_width=True):
-                    guest_email = f"guest_{int(time.time())}@vidhidesk.local"
-                    st.session_state.user = {
-                        "email": guest_email, "name": "Guest User", "institution": "Independent Researcher", "year": "N/A"
-                    }
+                    st.session_state.user = { "email": f"guest_{int(time.time())}@vidhidesk.local", "name": "Guest User", "institution": "Independent Researcher", "year": "N/A", "tier": "free" }
                     st.rerun()
 
 def main_app():
     with st.sidebar:
-        st.markdown(f"<h3 style='margin-bottom: 0; color: {t_text} !important;'>{st.session_state.user['name'].upper()}</h3>", unsafe_allow_html=True)
-        st.markdown(f"<span style='color: #D4AF37; font-size: 0.8rem; font-weight: 500;'>{st.session_state.user['institution']}</span>", unsafe_allow_html=True)
+        # THE NEW CYBERSIGILISM LOGO (DRAFT 7) AND HEADER
+        st.markdown(f"""
+            <div style='display: flex; align-items: center; margin-bottom: 10px; animation: fadeIn 0.8s ease-out;'>
+                <svg viewBox="0 0 100 100" style="width: 50px; height: 50px; margin-right: 15px; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.4));">
+                    <defs>
+                        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#BF953F"/><stop offset="40%" stop-color="#FCF6BA"/><stop offset="100%" stop-color="#AA771C"/></linearGradient>
+                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D946EF" /><stop offset="50%" stop-color="#8B5CF6" /><stop offset="100%" stop-color="#4C1D95" /></linearGradient>
+                    </defs>
+                    <path d="M 30 20 L 50 80 L 70 20 L 60 20 L 50 55 L 40 20 Z" fill="url(#g1)"/>
+                    <path d="M 10 10 L 25 30 L 15 50 L 45 95 L 50 85 L 30 50 L 40 30 L 20 10 Z" fill="url(#cyber)"/>
+                    <path d="M 90 10 L 75 30 L 85 50 L 55 95 L 50 85 L 70 50 L 60 30 L 80 10 Z" fill="url(#cyber)"/>
+                    <polygon points="50,5 53,15 50,25 47,15" fill="url(#cyber)"/>
+                    <polygon points="50,90 52,95 50,100 48,95" fill="url(#cyber)"/>
+                </svg>
+                <div>
+                    <h2 style="margin:0; font-size:1.6rem; letter-spacing:1px; line-height: 1.1; font-family: 'Cinzel', serif; color: #E2E8F0;">VIDHIDESK</h2>
+                    <span style="font-size: 0.65rem; color: #D946EF; letter-spacing: 3px; font-weight: 600; text-transform: uppercase;">Intelligence</span>
+                </div>
+            </div>
+            <div class='temple-divider' style='margin: 15px 0 20px 0; width: 100%; background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown(f"<h3 style='margin-bottom: 0; color: {t_text} !important; font-size: 1.1rem;'>{st.session_state.user['name'].upper()}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<span style='color: #8B5CF6; font-size: 0.8rem; font-weight: 500;'>{st.session_state.user['institution']}</span>", unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
-        
-        # --- WORKSPACE SELECTOR UI ---
         st.markdown(f"<div style='font-size: 0.75rem; color: {t_subtext}; margin-bottom: 5px; font-weight: 600; letter-spacing: 1px;'>ACTIVE CASE FOLDER</div>", unsafe_allow_html=True)
         
         workspaces = [{"id": 0, "name": "General Workspace"}] + db.get_workspaces(st.session_state.user['email'])
@@ -561,8 +500,7 @@ def main_app():
         
         current_index = 0
         for i, w in enumerate(workspaces):
-            if w['id'] == st.session_state.current_workspace['id']:
-                current_index = i
+            if w['id'] == st.session_state.current_workspace['id']: current_index = i
                 
         selected_ws_name = st.selectbox("Workspace", ws_names, index=current_index, label_visibility="collapsed")
         for w in workspaces:
@@ -580,29 +518,26 @@ def main_app():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # --- NEW WINDOWS 10 STYLE TABS GRID NAVIGATION ---
         nav = st.radio("MODULES", ["⚖️ Research", "✍️ Drafting", "🌍 Translate", "📚 Vault"], label_visibility="collapsed")
         
         st.markdown("<br>", unsafe_allow_html=True)
         if "GEMINI_API_KEY" in st.secrets:
             st.markdown(f"""
-            <div style='border: 1px solid {t_border}; padding: 12px; border-radius: 6px; background: transparent; margin-top:10px;'>
+            <div style='border: 1px solid {t_border_cyber}; padding: 12px; border-radius: 6px; background: rgba(139, 92, 246, 0.05); margin-top:10px; transition: all 0.3s ease;'>
                 <div style='display:flex; align-items:center; margin-bottom:5px;'>
                     <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
-                    <span style='color: #D4AF37; font-weight:600;'>System Online</span>
+                    <span style='color: #D946EF; font-weight:600;'>System Online</span>
                 </div>
                 <div style='font-size: 0.7rem; color: {t_subtext};'>Engine: GenAI 2.5 Streaming</div>
             </div>
             """, unsafe_allow_html=True)
-        else:
-            st.error("Config Error: API Key missing.")
+        else: st.error("Config Error: API Key missing.")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("LOGOUT / TERMINATE UPLINK"):
+        if st.button("TERMINATE UPLINK", type="secondary"):
             db.logout(st.session_state.user["email"])
             st.session_state.user = None
-            if "auth_token" in st.query_params:
-                del st.query_params["auth_token"]
+            if "auth_token" in st.query_params: del st.query_params["auth_token"]
             st.rerun()
 
     # --- RESEARCH CORE ---
@@ -611,33 +546,24 @@ def main_app():
         with sticky_header:
             st.markdown("<span id='sticky-header-marker'></span>", unsafe_allow_html=True)
             st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>RESEARCH CORE</h2>", unsafe_allow_html=True)
-            st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
+            st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
 
             param_col, mic_col = st.columns([0.85, 0.15], vertical_alignment="center")
             
             with param_col:
-                # REPLACED ST.EXPANDER WITH ST.POPOVER TO FIX THE "DOUBLE JUMP" GLITCH
                 with st.popover("⚙️ ADVANCED PARAMETERS & GROUNDING", use_container_width=True):
                     st.markdown("#### Output Configuration")
                     c1, c2, c3 = st.columns(3)
-                    with c1:
-                        tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
-                    with c2:
-                        diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
-                    with c3:
-                        space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
+                    with c1: tone = st.selectbox("OUTPUT TONE", ["Casual", "Professional", "Academic"], index=2)
+                    with c2: diff = st.selectbox("ANALYSIS DEPTH", ["Summary", "Detailed", "Bare Act"], index=1)
+                    with c3: space = st.selectbox("AUTO-ARCHIVE TO", ["None", "Research", "Paper", "Study"])
                         
                     st.markdown("---")
                     st.markdown("#### Database Grounding")
                     sc1, sc2, sc3 = st.columns([1, 1, 1])
-                    with sc1:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        enable_search = st.toggle("🌐 Live Web Search")
-                    with sc2:
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        strict_citation = st.toggle("🛡️ Strict Citations")
-                    with sc3:
-                        uploaded_pdf = st.file_uploader("📄 Upload PDF Context", type=["pdf"], key="res_pdf")
+                    with sc1: st.markdown("<br>", unsafe_allow_html=True); enable_search = st.toggle("🌐 Live Web Search")
+                    with sc2: st.markdown("<br>", unsafe_allow_html=True); strict_citation = st.toggle("🛡️ Strict Citations")
+                    with sc3: uploaded_pdf = st.file_uploader("📄 Upload PDF Context", type=["pdf"], key="res_pdf")
 
             with mic_col:
                 with st.popover("🎙️ VOICE", use_container_width=True):
@@ -648,8 +574,7 @@ def main_app():
         history = db.get_history(st.session_state.user['email'], workspace_id=st.session_state.current_workspace['id'])
         for msg in history:
             avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚖️"
-            with st.chat_message(msg['role'], avatar=avatar):
-                st.markdown(msg['content'])
+            with st.chat_message(msg['role'], avatar=avatar): st.markdown(msg['content'])
 
         query = st.chat_input("Enter legal query, section, or case citation...")
         is_audio_submission = audio_data is not None and submit_audio
@@ -666,16 +591,10 @@ def main_app():
             with st.chat_message("assistant", avatar="⚖️"):
                 pdf_extracted_text = None
                 if uploaded_pdf:
-                    with st.spinner("Reading Document..."):
-                        pdf_extracted_text = extract_pdf_text(uploaded_pdf)
+                    with st.spinner("Reading Document..."): pdf_extracted_text = extract_pdf_text(uploaded_pdf)
                 
                 audio_bytes = audio_data.getvalue() if is_audio_submission else None
-
-                stream = get_gemini_stream(
-                    query, tone, diff, st.session_state.user['institution'],
-                    pdf_text=pdf_extracted_text, audio_bytes=audio_bytes,
-                    enable_search=enable_search, strict_citation=strict_citation
-                )
+                stream = get_gemini_stream(query, tone, diff, st.session_state.user['institution'], pdf_text=pdf_extracted_text, audio_bytes=audio_bytes, enable_search=enable_search, strict_citation=strict_citation)
                 
                 full_response = st.write_stream(stream)
                 db.save_message(st.session_state.user['email'], "assistant", full_response, workspace_id=st.session_state.current_workspace['id'])
@@ -695,33 +614,23 @@ def main_app():
     # --- DRAFTING STUDIO ---
     elif nav == "✍️ Drafting":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>DRAFTING STUDIO</h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
-        
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
         st.markdown("Automated generation of court-ready legal documents based on standard Indian formats.", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         with st.container(border=True):
-            st.markdown("#### Draft Configuration")
-            doc_type = st.selectbox("Document Type", [
-                "Legal Notice (General)", "Legal Notice (Sec 138 NI Act - Cheque Bounce)", 
-                "Non-Disclosure Agreement (NDA)", "Bail Application (Under BNSS)", 
-                "Lease / Rent Agreement", "Writ Petition (Draft Format)"
-            ])
-            
+            doc_type = st.selectbox("Document Type", ["Legal Notice (General)", "Legal Notice (Sec 138 NI Act - Cheque Bounce)", "Non-Disclosure Agreement (NDA)", "Bail Application (Under BNSS)", "Lease / Rent Agreement", "Writ Petition (Draft Format)"])
             facts = st.text_area("Client Facts & Details (Optional if PDF provided)", height=150, placeholder="E.g., Client name is Rahul. Tenant hasn't paid rent of Rs 50,000...")
             uploaded_draft_pdf = st.file_uploader("📄 Upload Reference Document / Old Contract (PDF)", type=["pdf"], key="draft_pdf")
             
             if st.button("GENERATE DRAFT", use_container_width=True):
-                if not facts and not uploaded_draft_pdf:
-                    st.warning("Please provide either text facts or upload a reference PDF to generate a draft.")
+                if not facts and not uploaded_draft_pdf: st.warning("Please provide either text facts or upload a reference PDF to generate a draft.")
                 else:
                     st.markdown("---")
                     st.markdown(f"### Generated Draft: {doc_type}")
-                    
                     pdf_extracted_text = None
                     if uploaded_draft_pdf:
-                        with st.spinner("Extracting Reference Document..."):
-                            pdf_extracted_text = extract_pdf_text(uploaded_draft_pdf)
+                        with st.spinner("Extracting Reference Document..."): pdf_extracted_text = extract_pdf_text(uploaded_draft_pdf)
                             
                     stream = get_drafting_stream(doc_type, facts, st.session_state.user['institution'], pdf_text=pdf_extracted_text)
                     final_draft = st.write_stream(stream)
@@ -729,39 +638,28 @@ def main_app():
                     if "❌" not in final_draft:
                         context_note = f"Facts provided:\n{facts}\n\n[Reference PDF was uploaded and used in this draft]" if uploaded_draft_pdf else f"Facts provided:\n{facts}"
                         doc_bytes = generate_word_document(context_note, final_draft, title=f"Draft: {doc_type}")
-                        st.download_button(
-                            label="📄 DOWNLOAD DRAFT AS WORD",
-                            data=doc_bytes,
-                            file_name=f"Draft_{doc_type.replace(' ', '_')}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            type="primary"
-                        )
+                        st.download_button(label="📄 DOWNLOAD DRAFT AS WORD", data=doc_bytes, file_name=f"Draft_{doc_type.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
 
     # --- TRANSLATION DESK ---
     elif nav == "🌍 Translate":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>TRANSLATION DESK</h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
-        
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
         st.markdown("High-fidelity legal translation preserving complex terminology and legal nuances.", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
         with st.container(border=True):
             target_lang = st.selectbox("Translate To", ["Hindi", "Tamil", "Marathi", "Bengali", "Telugu", "Gujarati", "Malayalam", "English"])
-            
             source_text = st.text_area("Source Text (Optional if PDF provided)", height=150, placeholder="Paste legal document text here...")
             uploaded_trans_pdf = st.file_uploader("📄 Upload Document to Translate (PDF)", type=["pdf"], key="trans_pdf")
             
             if st.button("TRANSLATE", use_container_width=True):
-                if not source_text and not uploaded_trans_pdf:
-                    st.warning("Please paste text or upload a PDF to translate.")
+                if not source_text and not uploaded_trans_pdf: st.warning("Please paste text or upload a PDF to translate.")
                 else:
                     st.markdown("---")
                     st.markdown(f"### {target_lang} Translation")
-                    
                     pdf_extracted_text = None
                     if uploaded_trans_pdf:
-                        with st.spinner("Extracting PDF Text for Translation..."):
-                            pdf_extracted_text = extract_pdf_text(uploaded_trans_pdf)
+                        with st.spinner("Extracting PDF Text for Translation..."): pdf_extracted_text = extract_pdf_text(uploaded_trans_pdf)
                             
                     stream = get_translation_stream(source_text, target_lang, st.session_state.user['institution'], pdf_text=pdf_extracted_text)
                     final_translation = st.write_stream(stream)
@@ -769,30 +667,23 @@ def main_app():
                     if "❌" not in final_translation:
                         context_note = f"Source Text:\n{source_text}\n\n[PDF Document Translated]" if uploaded_trans_pdf else f"Source Text:\n{source_text}"
                         doc_bytes = generate_word_document(context_note, final_translation, title=f"Legal Translation ({target_lang})")
-                        st.download_button(
-                            label="📄 DOWNLOAD TRANSLATION AS WORD",
-                            data=doc_bytes,
-                            file_name=f"Translation_{target_lang}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            type="primary"
-                        )
+                        st.download_button(label="📄 DOWNLOAD TRANSLATION AS WORD", data=doc_bytes, file_name=f"Translation_{target_lang}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
 
+    # --- VAULT ---
     elif nav == "📚 Vault":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>KNOWLEDGE VAULT <span style='font-size:0.5em; color:{t_subtext};'>[{st.session_state.current_workspace['name']}]</span></h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
         
         t1, t2, t3 = st.tabs(["📚 RESEARCH", "📝 PAPERS", "🎓 STUDY"])
         for tab, cat in zip([t1, t2, t3], ["Research", "Paper", "Study"]):
             with tab:
                 st.markdown("<br>", unsafe_allow_html=True)
                 items = db.get_space_items(st.session_state.user['email'], cat, workspace_id=st.session_state.current_workspace['id'])
-                if not items:
-                    st.info(f"Sector '{cat}' is empty in this folder.", icon="ℹ️")
+                if not items: st.info(f"Sector '{cat}' is empty in this folder.", icon="ℹ️")
                 else:
                     for item in items:
                         with st.expander(f"📌 {item['timestamp'][:16]} | {item['query'][:60]}..."):
                             st.markdown(item['response'])
-                            
                             col1, col2 = st.columns([0.2, 0.8])
                             with col1:
                                 if st.button("DELETE RECORD", key=f"del_{item['id']}", type="secondary"):
@@ -800,16 +691,8 @@ def main_app():
                                     st.rerun()
                             with col2:
                                 doc_bytes = generate_word_document(item['query'], item['response'])
-                                st.download_button(
-                                    label="📄 EXPORT TO WORD",
-                                    data=doc_bytes,
-                                    file_name=f"VidhiDesk_Research_{item['id']}.docx",
-                                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                    key=f"dl_{item['id']}"
-                                )
+                                st.download_button(label="📄 EXPORT TO WORD", data=doc_bytes, file_name=f"VidhiDesk_Research_{item['id']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"dl_{item['id']}")
 
 if __name__ == "__main__":
-    if st.session_state.user:
-        main_app()
-    else:
-        login_page()
+    if st.session_state.user: main_app()
+    else: login_page()
