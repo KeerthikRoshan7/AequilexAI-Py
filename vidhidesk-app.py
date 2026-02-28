@@ -91,13 +91,16 @@ st.markdown(f"""
     }}
     
     /* =========================================
-       2. TABS GRID - "FLAT WINDOWS 10 METRO" UI
+       2. TABS GRID - STRICT EQUAL RECTANGLES
        ========================================= */
-    /* Transform radiogroup into a compressed 2x2 grid */
+    /* Transform radiogroup into a strict, perfectly equal 2x2 grid */
     div[role="radiogroup"] {{
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px !important; /* Tight compression */
+        grid-template-columns: 1fr 1fr !important;
+        grid-auto-rows: 48px !important; /* STRICT HEIGHT */
+        gap: 6px !important; 
+        width: 100% !important;
+        align-items: stretch !important;
     }}
     
     /* THE ULTIMATE RADIO CIRCLE KILLER */
@@ -106,47 +109,63 @@ st.markdown(f"""
     div[role="radiogroup"] label input {{ 
         display: none !important; 
         width: 0 !important; height: 0 !important; opacity: 0 !important;
+        position: absolute !important;
     }}
     
+    /* The uniform rectangular tile (LABEL) */
     div[role="radiogroup"] label {{
-        width: 100% !important; cursor: pointer !important;
-        margin: 0 !important; padding: 0 !important;
-        display: flex !important; justify-content: center !important;
-        border: none !important; background: transparent !important;
-    }}
-    
-    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {{
-        width: 100% !important;
-    }}
-    
-    /* The Flat Metro Tiles */
-    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.82rem !important; font-weight: 600 !important;
-        text-align: center !important; line-height: 1 !important;
-        color: {t_subtext} !important; 
-        height: 42px !important; /* FLAT RECTANGLE */
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        border-radius: 2px !important; /* Sharp Win10 Corners */
-        margin: 0 !important;
-        border: 1px solid {t_border} !important;
+        width: 100% !important; 
+        height: 100% !important;
+        margin: 0 !important; 
+        padding: 0 !important;
+        cursor: pointer !important;
+        display: flex !important; 
+        align-items: center !important; 
+        justify-content: center !important;
         background-color: {t_container} !important;
+        border: 1px solid {t_border} !important;
+        border-radius: 0px !important; /* EXACT ZERO FOR FLAT WIN10 METRO */
+        box-sizing: border-box !important;
         transition: all 0.2s ease !important;
     }}
-
-    /* Metro Hover State */
-    div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{
-        background-color: rgba(212, 175, 55, 0.08) !important; 
-        color: {t_text} !important;
-        border-color: rgba(212, 175, 55, 0.4) !important;
+    
+    /* Ensure internal text containers stretch full width/height */
+    div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] {{
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }}
+    
+    /* Text styling */
+    div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {{
+        font-size: 0.85rem !important; 
+        font-weight: 600 !important;
+        color: {t_subtext} !important; 
+        margin: 0 !important; 
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
     }}
 
-    /* Metro Active State (Win10 Accent Style) */
+    /* Hover effect */
+    div[role="radiogroup"] label:hover {{
+        background-color: rgba(212, 175, 55, 0.08) !important; 
+        border-color: rgba(212, 175, 55, 0.4) !important;
+    }}
+    div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{
+        color: {t_text} !important;
+    }}
+
+    /* Active Selection effect (Win10 Accent Style) */
+    div[role="radiogroup"] label:has(input[aria-checked="true"]) {{
+        background-color: {t_bg} !important;
+        border-color: {t_border} !important; 
+        border-left: 4px solid #D4AF37 !important; /* Thick golden accent line */
+        box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.05) !important;
+    }}
     div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{
-        background: {t_bg} !important;
-        border: 1px solid {t_border} !important; 
-        border-left: 5px solid #D4AF37 !important; /* Thick golden accent line */
         color: #D4AF37 !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }}
 
     /* =========================================
