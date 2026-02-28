@@ -73,36 +73,48 @@ st.markdown(f"""
     h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; }}
     
     /* =========================================
-       2. SIDEBAR NAVIGATION MENU HACK
+       2. SIDEBAR TABS HACK (Options to Tabs Grid)
        ========================================= */
     /* Hide the radio button circles completely */
     div[role="radiogroup"] div[data-baseweb="radio"] > div:first-of-type {{ display: none !important; }}
     
-    /* Style the labels to look like a full-width clickable menu block */
+    /* Transform radiogroup into a 2x2 flex grid of tabs */
+    div[role="radiogroup"] {{
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+    }}
+    
+    /* Style the labels to look like clickable tab blocks */
     div[role="radiogroup"] label {{
         width: 100% !important; cursor: pointer !important;
-        margin-bottom: 6px !important; padding: 0 !important;
+        margin: 0 !important; padding: 0 !important;
         background: transparent !important; border: none !important;
     }}
     
-    /* Text styling inside the nav pills */
+    /* Text styling inside the tab pills */
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.95rem !important; font-weight: 500 !important;
-        color: {t_subtext} !important; padding: 12px 15px !important;
+        font-size: 0.8rem !important; font-weight: 600 !important;
+        text-align: center !important; line-height: 1.2 !important;
+        color: {t_subtext} !important; padding: 12px 5px !important;
         border-radius: 8px !important; transition: all 0.2s ease !important;
         margin: 0 !important;
+        border: 1px solid {t_border} !important;
+        background-color: {t_bg} !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }}
 
-    /* Hover effect for Nav Menu */
+    /* Hover effect for Tabs */
     div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{
-        background-color: rgba(212, 175, 55, 0.08) !important; color: {t_text} !important;
+        background-color: rgba(212, 175, 55, 0.05) !important; color: {t_text} !important;
+        border-color: rgba(212, 175, 55, 0.4) !important;
     }}
 
-    /* Active Selection effect (using advanced CSS :has) */
+    /* Active Selection effect (Tab Active State) */
     div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{
-        background: linear-gradient(90deg, rgba(212, 175, 55, 0.15) 0%, transparent 100%) !important;
-        border-left: 3px solid #D4AF37 !important; color: #D4AF37 !important;
-        font-weight: 600 !important; border-radius: 0 8px 8px 0 !important;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.02) 100%) !important;
+        border: 1px solid #D4AF37 !important; color: #D4AF37 !important;
+        box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.15), 0 2px 5px rgba(0,0,0,0.2) !important;
     }}
 
     /* =========================================
@@ -566,7 +578,8 @@ def main_app():
         
         st.markdown("<br>", unsafe_allow_html=True)
         
-        nav = st.radio("MODULES", ["Research Core", "Drafting Studio", "Translation Desk", "Knowledge Vault"], label_visibility="collapsed")
+        # --- NEW GRID TABS NAVIGATION ---
+        nav = st.radio("MODULES", ["⚖️ Research", "✍️ Drafting", "🌍 Translate", "📚 Vault"], label_visibility="collapsed")
         
         st.markdown("<br>", unsafe_allow_html=True)
         theme_icon = "☀️ Light Mode" if st.session_state.theme == "dark" else "🌙 Dark Mode"
@@ -574,6 +587,20 @@ def main_app():
             toggle_theme()
             st.rerun()
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        if "GEMINI_API_KEY" in st.secrets:
+            st.markdown(f"""
+            <div style='border: 1px solid {t_border}; padding: 12px; border-radius: 6px; background: transparent; margin-top:10px;'>
+                <div style='display:flex; align-items:center; margin-bottom:5px;'>
+                    <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
+                    <span style='color: #D4AF37; font-weight:600;'>System Online</span>
+                </div>
+                <div style='font-size: 0.7rem; color: {t_subtext};'>Engine: GenAI 2.5 Streaming</div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.error("Config Error: API Key missing.")
+        
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("LOGOUT / TERMINATE UPLINK"):
             db.logout(st.session_state.user["email"])
@@ -583,7 +610,7 @@ def main_app():
             st.rerun()
 
     # --- RESEARCH CORE ---
-    if nav == "Research Core":
+    if nav == "⚖️ Research":
         sticky_header = st.container()
         with sticky_header:
             st.markdown("<span id='sticky-header-marker'></span>", unsafe_allow_html=True)
@@ -667,7 +694,7 @@ def main_app():
                     st.rerun()
 
     # --- DRAFTING STUDIO ---
-    elif nav == "Drafting Studio":
+    elif nav == "✍️ Drafting":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>DRAFTING STUDIO</h2>", unsafe_allow_html=True)
         st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
         
@@ -712,7 +739,7 @@ def main_app():
                         )
 
     # --- TRANSLATION DESK ---
-    elif nav == "Translation Desk":
+    elif nav == "🌍 Translate":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>TRANSLATION DESK</h2>", unsafe_allow_html=True)
         st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
         
@@ -751,7 +778,7 @@ def main_app():
                             type="primary"
                         )
 
-    elif nav == "Knowledge Vault":
+    elif nav == "📚 Vault":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>KNOWLEDGE VAULT <span style='font-size:0.5em; color:{t_subtext};'>[{st.session_state.current_workspace['name']}]</span></h2>", unsafe_allow_html=True)
         st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0;'></div>", unsafe_allow_html=True)
         
