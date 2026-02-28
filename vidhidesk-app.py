@@ -575,7 +575,9 @@ def main_app():
                     with st.spinner("Reading Document..."): pdf_extracted_text = extract_pdf_text(uploaded_pdf)
                 
                 audio_bytes = audio_data.getvalue() if is_audio_submission else None
-                stream = get_gemini_stream(query, tone, diff, st.session_state.user['institution'], pdf_text=pdf_extracted_text, audio_bytes=audio_bytes, enable_search=enable_search, strict_citation=strict_citation)
+                
+                # FIX: Pass the 'history' variable to give the AI memory
+                stream = get_gemini_stream(query, tone, diff, st.session_state.user['institution'], history, pdf_text=pdf_extracted_text, audio_bytes=audio_bytes, enable_search=enable_search, strict_citation=strict_citation)
                 
                 full_response = st.write_stream(stream)
                 db.save_message(st.session_state.user['email'], "assistant", full_response, workspace_id=st.session_state.current_workspace['id'])
@@ -600,7 +602,8 @@ def main_app():
         st.markdown("<br>", unsafe_allow_html=True)
 
         with st.container(border=True):
-            doc_type = st.selectbox("Document Type", ["Legal Notice (General)", "Legal Notice (Sec 138 NI Act - Cheque Bounce)", "Non-Disclosure Agreement (NDA)", "Bail Application (Under BNSS)", "Lease / Rent Agreement", "Writ Petition (Draft Format)"])
+            # FIX: Added "Affidavit" to the list
+            doc_type = st.selectbox("Document Type", ["Legal Notice (General)", "Legal Notice (Sec 138 NI Act - Cheque Bounce)", "Non-Disclosure Agreement (NDA)", "Bail Application (Under BNSS)", "Lease / Rent Agreement", "Affidavit", "Writ Petition (Draft Format)"])
             facts = st.text_area("Client Facts & Details (Optional if PDF provided)", height=150, placeholder="E.g., Client name is Rahul. Tenant hasn't paid rent of Rs 50,000...")
             uploaded_draft_pdf = st.file_uploader("📄 Upload Reference Document / Old Contract (PDF)", type=["pdf"], key="draft_pdf")
             
@@ -613,7 +616,8 @@ def main_app():
                     if uploaded_draft_pdf:
                         with st.spinner("Extracting Reference Document..."): pdf_extracted_text = extract_pdf_text(uploaded_draft_pdf)
                             
-                    stream = get_drafting_stream(doc_type, facts, st.session_state.user['institution'], pdf_text=pdf_extracted_text)
+                    # FIX: Removed institution from arguments to match updated function
+                    stream = get_drafting_stream(doc_type, facts, pdf_text=pdf_extracted_text)
                     final_draft = st.write_stream(stream)
                     
                     if "❌" not in final_draft:
