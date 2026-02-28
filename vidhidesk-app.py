@@ -50,17 +50,20 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
     /* =========================================
-       1. STREAMLIT UI OVERRIDES & SIDEBAR FIX
+       1. STREAMLIT UI OVERRIDES & THEME ENFORCEMENT
        ========================================= */
-    /* Make header transparent so the sidebar > arrow is visible, but hide the right-side clutter */
-    header[data-testid="stHeader"] {{ 
-        background: transparent !important; 
+    /* KEEP HEADER ALIVE FOR THE SIDEBAR TOGGLE ARROW */
+    header[data-testid="stHeader"] {{
+        background: transparent !important;
         box-shadow: none !important;
     }}
-    div[data-testid="stToolbar"] {{ display: none !important; }}
-    #MainMenu {{ display: none !important; }}
-    footer {{ display: none !important; }}
-    .stDeployButton {{ display: none !important; }}
+    
+    /* HIDE ONLY THE RIGHT-SIDE CLUTTER */
+    [data-testid="stHeaderActionElements"], #MainMenu, .stDeployButton {{
+        display: none !important;
+    }}
+    
+    footer {{ visibility: hidden !important; }}
     div[data-testid="stDecoration"] {{ display: none !important; }}
     
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
