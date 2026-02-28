@@ -51,18 +51,15 @@ st.markdown(f"""
     /* =========================================
        1. STREAMLIT UI OVERRIDES (THE FIX)
        ========================================= */
-    /* Hide top header, hamburger menu, deploy button, and decoration line */
     header[data-testid="stHeader"] {{ display: none !important; }}
     #MainMenu {{ visibility: hidden !important; }}
     footer {{ visibility: hidden !important; }}
     .stDeployButton {{ display: none !important; }}
     div[data-testid="stDecoration"] {{ display: none !important; }}
     
-    /* Fix layout padding since header is gone */
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
 
-    /* GLOBAL RESET & DYNAMIC THEME */
     .stApp {{
         background-color: {t_bg}; color: {t_text}; font-family: 'Inter', sans-serif;
         transition: background-color 0.4s ease, color 0.4s ease;
@@ -75,9 +72,6 @@ st.markdown(f"""
     /* =========================================
        2. SIDEBAR TABS HACK (Options to Tabs Grid)
        ========================================= */
-    /* Hide the radio button circles completely */
-    div[role="radiogroup"] div[data-baseweb="radio"] > div:first-of-type {{ display: none !important; }}
-    
     /* Transform radiogroup into a 2x2 flex grid of tabs */
     div[role="radiogroup"] {{
         display: grid !important;
@@ -85,11 +79,22 @@ st.markdown(f"""
         gap: 8px !important;
     }}
     
-    /* Style the labels to look like clickable tab blocks */
+    /* HARD KILL the radio button circles */
+    div[role="radiogroup"] label > div:first-child {{ 
+        display: none !important; 
+    }}
+    
+    /* Style the labels to look like clickable full-width tab blocks */
     div[role="radiogroup"] label {{
         width: 100% !important; cursor: pointer !important;
         margin: 0 !important; padding: 0 !important;
         background: transparent !important; border: none !important;
+        display: flex !important; justify-content: center !important;
+    }}
+    
+    /* Ensure the text container takes full width */
+    div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {{
+        width: 100% !important;
     }}
     
     /* Text styling inside the tab pills */
@@ -102,6 +107,8 @@ st.markdown(f"""
         border: 1px solid {t_border} !important;
         background-color: {t_bg} !important;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100% !important;
+        display: block !important;
     }}
 
     /* Hover effect for Tabs */
