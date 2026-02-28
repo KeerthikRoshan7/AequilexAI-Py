@@ -9,6 +9,7 @@ from datetime import datetime
 import PyPDF2
 from docx import Document
 import io
+from supabase import create_client, Client
 
 # --- 1. APP CONFIGURATION & SESSION INIT ---
 st.set_page_config(
@@ -236,128 +237,96 @@ INSTITUTIONS = sorted([
     "Symbiosis Law School (SLS)", "School of Law, Christ University", "Jindal Global Law School", "Other"
 ]) 
 
-# --- 4. DATABASE MANAGER ---
+# --- 4. DATABASE MANAGER (SUPABASE CLOUD) ---
 class DBHandler:
-    def __init__(self, db_name="vidhidesk_users.db"):
-        self.db_name = db_name
-        self.verify_db()
-
-    def get_connection(self):
-        return sqlite3.connect(self.db_name, check_same_thread=False)
-
-    def verify_db(self):
-        conn = self.get_connection()
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS users (email TEXT PRIMARY KEY, password TEXT, name TEXT, institution TEXT, year TEXT)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, role TEXT, content TEXT, timestamp DATETIME)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS spaces (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, category TEXT, query TEXT, response TEXT, timestamp DATETIME)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS workspaces (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, name TEXT, created_at DATETIME)''')
-        try: c.execute('''ALTER TABLE users ADD COLUMN auth_token TEXT''')
-        except: pass
-        try: c.execute('''ALTER TABLE chats ADD COLUMN workspace_id INTEGER DEFAULT 0''')
-        except: pass
-        try: c.execute('''ALTER TABLE spaces ADD COLUMN workspace_id INTEGER DEFAULT 0''')
-        except: pass
-        conn.commit()
-        conn.close()
+    def __init__(self):
+        try:
+            url: str = st.secrets["SUPABASE_URL"]
+            key: str = st.secrets["SUPABASE_KEY"]
+            self.supabase: Client = create_client(url, key)
+        except Exception as e:
+            st.error("⚠️ Supabase Credentials missing from Streamlit Secrets!")
 
     def register_user(self, email, password, name, inst, year):
-        conn = self.get_connection()
+        hashed_pw = hashlib.sha256(password.encode()).hexdigest()
         try:
-            hashed_pw = hashlib.sha256(password.encode()).hexdigest()
-            conn.execute("INSERT INTO users (email, password, name, institution, year, auth_token) VALUES (?, ?, ?, ?, ?, ?)", 
-                         (email, hashed_pw, name, inst, year, ""))
-            conn.commit()
+            self.supabase.table("users").insert({
+                "email": email, "password": hashed_pw, "name": name, 
+                "institution": inst, "year": year, "auth_token": "", "tier": "free"
+            }).execute()
             return True
-        except sqlite3.IntegrityError:
+        except Exception:
             return False
-        finally:
-            conn.close()
 
     def login(self, email, password, remember_me=False):
-        conn = self.get_connection()
         hashed_pw = hashlib.sha256(password.encode()).hexdigest()
-        cur = conn.execute("SELECT name, institution, year FROM users WHERE email=? AND password=?", (email, hashed_pw))
-        user = cur.fetchone()
+        response = self.supabase.table("users").select("*").eq("email", email).eq("password", hashed_pw).execute()
         
-        if user:
+        if response.data:
+            user = response.data[0]
             token = ""
             if remember_me:
                 token = str(uuid.uuid4())
-                conn.execute("UPDATE users SET auth_token=? WHERE email=?", (token, email))
-                conn.commit()
-            conn.close()
-            return {"email": email, "name": user[0], "institution": user[1], "year": user[2], "token": token}
-        conn.close()
+                self.supabase.table("users").update({"auth_token": token}).eq("email", email).execute()
+            
+            return {
+                "email": user["email"], "name": user["name"], 
+                "institution": user["institution"], "year": user["year"], 
+                "tier": user.get("tier", "free"), "token": token
+            }
         return None
 
     def login_with_token(self, token):
-        conn = self.get_connection()
-        cur = conn.execute("SELECT email, name, institution, year FROM users WHERE auth_token=?", (token,))
-        user = cur.fetchone()
-        conn.close()
-        if user and token != "":
-            return {"email": user[0], "name": user[1], "institution": user[2], "year": user[3], "token": token}
+        if not token: return None
+        response = self.supabase.table("users").select("*").eq("auth_token", token).execute()
+        if response.data:
+            user = response.data[0]
+            return {
+                "email": user["email"], "name": user["name"], 
+                "institution": user["institution"], "year": user["year"], 
+                "tier": user.get("tier", "free"), "token": token
+            }
         return None
 
     def logout(self, email):
-        conn = self.get_connection()
-        conn.execute("UPDATE users SET auth_token='' WHERE email=?", (email,))
-        conn.commit()
-        conn.close()
+        self.supabase.table("users").update({"auth_token": ""}).eq("email", email).execute()
 
     def save_message(self, email, role, content, workspace_id=0):
-        conn = self.get_connection()
-        conn.execute("INSERT INTO chats (email, role, content, timestamp, workspace_id) VALUES (?, ?, ?, ?, ?)", (email, role, content, datetime.now(), workspace_id))
-        conn.commit()
-        conn.close()
+        self.supabase.table("chats").insert({
+            "email": email, "role": role, "content": content, 
+            "workspace_id": workspace_id, "timestamp": datetime.now().isoformat()
+        }).execute()
 
     def get_history(self, email, workspace_id=0):
-        conn = self.get_connection()
-        cur = conn.execute("SELECT role, content FROM chats WHERE email=? AND workspace_id=? ORDER BY id ASC", (email, workspace_id))
-        data = [{"role": row[0], "content": row[1]} for row in cur.fetchall()]
-        conn.close()
-        return data
+        response = self.supabase.table("chats").select("role, content").eq("email", email).eq("workspace_id", workspace_id).order("id", desc=False).execute()
+        return response.data if response.data else []
 
     def clear_history(self, email, workspace_id=0):
-        conn = self.get_connection()
-        conn.execute("DELETE FROM chats WHERE email=? AND workspace_id=?", (email, workspace_id))
-        conn.commit()
-        conn.close()
+        self.supabase.table("chats").delete().eq("email", email).eq("workspace_id", workspace_id).execute()
 
     def save_to_space(self, email, category, query, response, workspace_id=0):
-        conn = self.get_connection()
-        conn.execute("INSERT INTO spaces (email, category, query, response, timestamp, workspace_id) VALUES (?, ?, ?, ?, ?, ?)", (email, category, query, response, datetime.now(), workspace_id))
-        conn.commit()
-        conn.close()
+        self.supabase.table("spaces").insert({
+            "email": email, "category": category, "query": query, 
+            "response": response, "workspace_id": workspace_id, 
+            "timestamp": datetime.now().isoformat()
+        }).execute()
 
     def get_space_items(self, email, category, workspace_id=0):
-        conn = self.get_connection()
-        cur = conn.execute("SELECT id, query, response, timestamp FROM spaces WHERE email=? AND category=? AND workspace_id=? ORDER BY id DESC", (email, category, workspace_id))
-        data = [{"id": r[0], "query": r[1], "response": r[2], "timestamp": r[3]} for r in cur.fetchall()]
-        conn.close()
-        return data
+        response = self.supabase.table("spaces").select("id, query, response, timestamp").eq("email", email).eq("category", category).eq("workspace_id", workspace_id).order("id", desc=True).execute()
+        return response.data if response.data else []
 
     def delete_space_item(self, item_id):
-        conn = self.get_connection()
-        conn.execute("DELETE FROM spaces WHERE id=?", (item_id,))
-        conn.commit()
-        conn.close()
+        self.supabase.table("spaces").delete().eq("id", item_id).execute()
 
     def create_workspace(self, email, name):
-        conn = self.get_connection()
-        cur = conn.execute("INSERT INTO workspaces (email, name, created_at) VALUES (?, ?, ?)", (email, name, datetime.now()))
-        new_id = cur.lastrowid
-        conn.commit()
-        conn.close()
-        return new_id
+        response = self.supabase.table("workspaces").insert({
+            "email": email, "name": name, "created_at": datetime.now().isoformat()
+        }).execute()
+        return response.data[0]["id"] if response.data else 0
 
     def get_workspaces(self, email):
-        conn = self.get_connection()
-        cur = conn.execute("SELECT id, name FROM workspaces WHERE email=? ORDER BY created_at DESC", (email,))
-        data = [{"id": r[0], "name": r[1]} for r in cur.fetchall()]
-        conn.close()
-        return data
+        response = self.supabase.table("workspaces").select("id, name").eq("email", email).order("created_at", desc=True).execute()
+        return response.data if response.data else []
 
 db = DBHandler()
 
