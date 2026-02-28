@@ -50,7 +50,7 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
     /* =========================================
-       1. STREAMLIT UI OVERRIDES (THE FIX)
+       1. STREAMLIT UI OVERRIDES & THEME ENFORCEMENT
        ========================================= */
     header[data-testid="stHeader"] {{ display: none !important; }}
     #MainMenu {{ visibility: hidden !important; }}
@@ -61,18 +61,23 @@ st.markdown(f"""
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
 
-    .stApp {{
-        background-color: {t_bg}; color: {t_text}; font-family: 'Inter', sans-serif;
+    /* FORCE LIGHT/DARK THEME ACROSS ALL HIDDEN CONTAINERS */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{
+        background-color: {t_bg} !important; 
+        color: {t_text} !important; 
+        font-family: 'Inter', sans-serif;
         transition: background-color 0.4s ease, color 0.4s ease;
     }}
+    
     section[data-testid="stSidebar"] {{
         background-color: {t_container} !important; border-right: 1px solid {t_border} !important;
     }}
     h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; }}
     
-    /* FIX: LIGHT MODE BOTTOM CHAT CONTAINER OVERRIDE */
+    /* FIX: LIGHT MODE BOTTOM CHAT CONTAINER BLACK BOX OVERRIDE */
     div[data-testid="stBottom"], div[data-testid="stBottomBlockContainer"] {{
         background-color: {t_bg} !important; 
+        background: {t_bg} !important;
         transition: background-color 0.4s ease;
     }}
     div[data-testid="stBottom"] > div {{
@@ -80,63 +85,68 @@ st.markdown(f"""
     }}
 
     /* FIX: GHOST TEXT / PLACEHOLDER VISIBILITY */
-    input::placeholder, textarea::placeholder {{
-        color: {t_subtext} !important;
-        opacity: 0.65 !important;
+    input::placeholder, textarea::placeholder, .stChatInput textarea::placeholder {{
+        color: {t_text} !important;
+        opacity: 0.55 !important;
     }}
     
     /* =========================================
-       2. TABS GRID - "WINDOWS 10 LOGO" METRO UI
+       2. TABS GRID - "FLAT WINDOWS 10 METRO" UI
        ========================================= */
-    /* Transform radiogroup into a perfectly compressed 2x2 grid */
+    /* Transform radiogroup into a compressed 2x2 grid */
     div[role="radiogroup"] {{
         display: grid !important;
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 4px !important; /* Tight compression */
+        gap: 6px !important; /* Tight compression */
     }}
     
-    /* HARD KILL the radio button circles */
-    div[role="radiogroup"] label > div:first-child {{ 
+    /* THE ULTIMATE RADIO CIRCLE KILLER */
+    div[role="radiogroup"] label > div:first-child:not([data-testid="stMarkdownContainer"]),
+    div[role="radiogroup"] label div[data-baseweb="radio"],
+    div[role="radiogroup"] label input {{ 
         display: none !important; 
+        width: 0 !important; height: 0 !important; opacity: 0 !important;
     }}
     
     div[role="radiogroup"] label {{
         width: 100% !important; cursor: pointer !important;
         margin: 0 !important; padding: 0 !important;
-        display: block !important;
+        display: flex !important; justify-content: center !important;
+        border: none !important; background: transparent !important;
     }}
     
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] {{
         width: 100% !important;
-        height: 100% !important;
     }}
     
-    /* The Metro Tiles */
+    /* The Flat Metro Tiles */
     div[role="radiogroup"] div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.85rem !important; font-weight: 600 !important;
-        text-align: center !important; line-height: 1.3 !important;
+        font-size: 0.82rem !important; font-weight: 600 !important;
+        text-align: center !important; line-height: 1 !important;
         color: {t_subtext} !important; 
-        height: 75px !important; /* Flawless square-ish proportion */
+        height: 42px !important; /* FLAT RECTANGLE */
         display: flex !important; align-items: center !important; justify-content: center !important;
-        border-radius: 3px !important; /* Sharp Win10 Corners */
+        border-radius: 2px !important; /* Sharp Win10 Corners */
         margin: 0 !important;
         border: 1px solid {t_border} !important;
         background-color: {t_container} !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         transition: all 0.2s ease !important;
     }}
 
+    /* Metro Hover State */
     div[role="radiogroup"] label:hover div[data-testid="stMarkdownContainer"] p {{
         background-color: rgba(212, 175, 55, 0.08) !important; 
         color: {t_text} !important;
-        border-color: rgba(212, 175, 55, 0.5) !important;
+        border-color: rgba(212, 175, 55, 0.4) !important;
     }}
 
+    /* Metro Active State (Win10 Accent Style) */
     div[role="radiogroup"] label:has(input[aria-checked="true"]) div[data-testid="stMarkdownContainer"] p {{
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%) !important;
-        border: 2px solid #D4AF37 !important; /* Bold solid outline */
+        background: {t_bg} !important;
+        border: 1px solid {t_border} !important; 
+        border-left: 5px solid #D4AF37 !important; /* Thick golden accent line */
         color: #D4AF37 !important;
-        box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.15) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
     }}
 
     /* =========================================
