@@ -22,8 +22,7 @@ st.set_page_config(
 if "user" not in st.session_state: st.session_state.user = None
 if "current_workspace" not in st.session_state: st.session_state.current_workspace = {"id": 0, "name": "General Workspace"}
 
-# --- 2. NEO-BRUTALISM THEME ENGINE ---
-# We use CSS to aggressively override Streamlit's default styling
+# --- 2. NEO-BRUTALISM THEME ENGINE (PATCHED) ---
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&display=swap');
@@ -31,7 +30,10 @@ st.markdown(f"""
     /* =========================================
        1. GLOBAL NEO-BRUTALISM RESETS
        ========================================= */
-    * {{ font-family: 'Space Grotesk', sans-serif !important; }}
+    /* Target specific text elements to avoid breaking Streamlit's Material Icons */
+    .stApp, p, h1, h2, h3, h4, h5, h6, label, input, textarea, button, li, span.st-emotion-cache-10trblm {{ 
+        font-family: 'Space Grotesk', sans-serif !important; 
+    }}
     
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{ 
         background-color: #FFFFFF !important; color: #000000 !important; 
@@ -46,7 +48,7 @@ st.markdown(f"""
     }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
 
-    h1, h2, h3, h4, h5, h6, p, span, div, label {{ color: #000 !important; font-weight: 600; }}
+    h1, h2, h3, h4, h5, h6, p, label {{ color: #000 !important; font-weight: 600; }}
 
     /* =========================================
        2. TYPOGRAPHY & BRUTALIST COMPONENTS
@@ -55,7 +57,7 @@ st.markdown(f"""
     .vidhi-title {{
         font-size: clamp(3rem, 7vw, 5.5rem) !important; margin: 0 auto;
         color: #000 !important; font-weight: 900 !important; text-transform: uppercase;
-        letter-spacing: -2px; line-height: 1; text-shadow: 6px 6px 0px #FF00FF; /* Hot Pink Shadow */
+        letter-spacing: -2px; line-height: 1; text-shadow: 6px 6px 0px #FF00FF; 
         -webkit-text-fill-color: #000; background: none;
     }}
     .temple-divider {{ height: 6px; width: 100%; background: #000; margin: 25px auto; border-radius: 0; box-shadow: 4px 4px 0px #00FFF0; }}
@@ -77,6 +79,7 @@ st.markdown(f"""
         background-color: #00FFF0 !important; color: #000 !important; font-weight: 900 !important;
         border: 3px solid #000 !important; border-radius: 0px !important; text-transform: uppercase; letter-spacing: 1px; width: 100%; 
         box-shadow: 6px 6px 0px #000 !important; transition: all 0.1s ease !important; padding: 10px !important;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* Fixes button overflow */
     }}
     .stButton > button:hover, .stButton > button:active {{
         background-color: #FF00FF !important; color: #FFF !important;
@@ -89,15 +92,20 @@ st.markdown(f"""
     div[data-testid="stContainer"] > div > div > div {{ 
         background-color: #FFF; border: 3px solid #000; border-radius: 0px; box-shadow: 8px 8px 0px #000; padding: 20px !important; 
     }}
-    div[data-baseweb="popover"] {{ background-color: #FFF !important; border: 4px solid #000 !important; box-shadow: 8px 8px 0px #FF00FF !important; border-radius: 0 !important; }}
+    div[data-baseweb="popover"] {{ background-color: #FFF !important; border: 4px solid #000 !important; box-shadow: 8px 8px 0px #FF00FF !important; border-radius: 0 !important; padding: 10px !important; }}
     div[data-testid="stPopover"] > button {{ min-height: 48px !important; border-radius: 0px !important; background: #FFF !important; }}
 
-    /* Chat Bubbles */
+    /* Chat Bubbles & Bottom Chat Container Fix */
     .stChatMessage {{
         background-color: #FFF !important; border: 3px solid #000 !important; border-radius: 0px !important; padding: 1.5rem !important; margin-bottom: 1.5rem !important;
         box-shadow: 6px 6px 0px #000 !important; color: #000 !important;
     }}
     .stChatMessage[data-testid="stChatMessageAvatar"] {{ background-color: #FFE600 !important; border: 3px solid #000 !important; color: #000 !important; border-radius: 0px !important; font-weight: 900; }}
+    
+    /* Aggressively force bottom container to white */
+    div[data-testid="stBottom"], div[data-testid="stBottom"] > div, div[data-testid="stChatInputContainer"] {{
+        background-color: #FFFFFF !important; background: #FFFFFF !important;
+    }}
 
     /* =========================================
        3. SIDEBAR NAVIGATION - BLOCKY TABS
@@ -341,7 +349,6 @@ def login_page():
     st.markdown("""
         <div class='vidhi-title-container'>
             <div style="display: flex; justify-content: center; margin-bottom: 10px;">
-                <!-- Neo-Brutalist Logo Interpretation (Heavy outlines, primary colors) -->
                 <svg viewBox="0 0 100 100" class="login-svg" style="width: 140px; height: 140px; filter: drop-shadow(8px 8px 0px #000);">
                     <path d="M 30 20 L 50 80 L 70 20 L 60 20 L 50 55 L 40 20 Z" fill="#FFE600" stroke="#000" stroke-width="4" stroke-linejoin="miter"/>
                     <path d="M 10 10 L 25 30 L 15 50 L 45 95 L 50 85 L 30 50 L 40 30 L 20 10 Z" fill="#FF00FF" stroke="#000" stroke-width="3" stroke-linejoin="miter"/>
@@ -423,8 +430,9 @@ def main_app():
         for i, w in enumerate(workspaces):
             if w['id'] == st.session_state.current_workspace['id']: current_index = i
         
-        # Collaborative Sync Feature
-        wc1, wc2 = st.columns([0.75, 0.25])
+        # PATCH: Adjusted columns from [0.8, 0.2] to [0.85, 0.15] and changed button text to just the icon
+        # This prevents the brutalist borders from squishing into each other
+        wc1, wc2 = st.columns([0.85, 0.15])
         with wc1:
             selected_ws_name = st.selectbox("Workspace", ws_names, index=current_index, label_visibility="collapsed")
             for w in workspaces:
@@ -432,7 +440,7 @@ def main_app():
                     st.session_state.current_workspace = w
                     st.rerun()
         with wc2:
-            if st.button("SYNC", help="Sync Collaborative Workspace Data"):
+            if st.button("🔄", help="Sync Collaborative Workspace Data"):
                 st.toast("Database Synced with Associates!", icon="⚡")
                 st.rerun()
         
