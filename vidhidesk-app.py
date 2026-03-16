@@ -66,6 +66,9 @@ st.markdown(f"""
     [data-testid="stHeaderActionElements"], #MainMenu, .stDeployButton, footer, div[data-testid="stDecoration"] {{ display: none !important; }}
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
+    
+    /* Hide the "Press Enter to apply" instructions from inputs */
+    div[data-testid="InputInstructions"] {{ display: none !important; }}
 
     /* FORCE OBSIDIAN THEME ACROSS CONTAINERS */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{ background-color: {t_bg} !important; color: {t_text} !important; font-family: 'Inter', sans-serif; }}
@@ -122,8 +125,15 @@ st.markdown(f"""
 
     div[data-baseweb="select"] > div {{ background-color: {t_input_bg} !important; border: 1px solid {t_border} !important; color: {t_text} !important; border-radius: 6px !important; transition: all 0.3s ease !important; }}
     div[data-baseweb="select"] > div:hover, div[data-baseweb="select"] > div:focus-within {{ border-color: #8B5CF6 !important; box-shadow: 0 0 10px rgba(139, 92, 246, 0.1) !important; }}
-    div[data-baseweb="popover"] {{ background-color: {t_container} !important; border: 1px solid #8B5CF6 !important; transition: all 0.3s ease; }}
+    
+    /* Make dropdown options clickable only (prevent text selection) */
+    div[data-baseweb="popover"] {{ 
+        background-color: {t_container} !important; border: 1px solid #8B5CF6 !important; transition: all 0.3s ease; 
+        user-select: none !important; -webkit-user-select: none !important; 
+    }}
+    div[data-baseweb="popover"] li {{ cursor: pointer !important; }}
     div[data-baseweb="popover"] li:hover {{ background-color: rgba(139, 92, 246, 0.15) !important; color: #D946EF !important; }}
+    
     div[data-testid="stPopover"] > button {{ min-height: 48px !important; border-radius: 8px !important; transition: all 0.3s ease !important; }}
 
     .stTextInput > div > div > input, .stChatInput textarea, .stTextArea textarea {{
@@ -378,7 +388,7 @@ def login_page():
             </div>
             <h1 class='vidhi-title'>VIDHIDESK</h1>
             <div class='temple-divider'></div>
-            <div class='vidhi-subtitle' style='color: #D946EF;'>Intelligent Legal Infrastructure</div>
+            <div class='vidhi-subtitle' style='color: #D946EF;'>Your AI-Powered Legal Research Assistant</div>
         </div>
     """, unsafe_allow_html=True)
     
