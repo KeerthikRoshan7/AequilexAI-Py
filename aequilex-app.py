@@ -13,7 +13,7 @@ from supabase import create_client, Client
 
 # --- 1. APP CONFIGURATION & SESSION INIT ---
 st.set_page_config(
-    page_title="VidhiDesk | Legal Intelligence",
+    page_title="Aequilex | Legal Intelligence",
     page_icon="⚖️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -35,30 +35,41 @@ t_chat_bg = "rgba(255, 255, 255, 0.02)"
 
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Audiowide&family=Syne:wght@700;800&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+    /* Typography Classes */
+    .font-audiowide {{ font-family: 'Audiowide', sans-serif; letter-spacing: 0.05em; }}
+    .font-syne {{ font-family: 'Syne', sans-serif; font-weight: 800; }}
+    .font-heading {{ font-family: 'Rajdhani', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }}
+    
+    .cyber-text {{
+        background: linear-gradient(135deg, #D946EF 0%, #8B5CF6 50%, #4C1D95 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+        text-shadow: 0 0 20px rgba(217, 70, 239, 0.4);
+    }}
+    .gold-text {{
+        background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent;
+    }}
 
     /* =========================================
        1. CORE UI ANIMATIONS & STREAMLIT OVERRIDES
        ========================================= */
     @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
-    @keyframes pulseGlow {{ 0% {{ filter: drop-shadow(0 0 5px rgba(217, 70, 239, 0.2)); }} 50% {{ filter: drop-shadow(0 0 15px rgba(217, 70, 239, 0.6)); }} 100% {{ filter: drop-shadow(0 0 5px rgba(217, 70, 239, 0.2)); }} }}
     @keyframes activeGlow {{ 0% {{ box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05); }} 50% {{ box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.15); }} 100% {{ box-shadow: inset 0 0 10px rgba(139, 92, 246, 0.05); }} }}
 
-    /* LOGIN PAGE CINEMATIC SEQUENCE */
-    @keyframes cyberAssemblyLeft {{ 0% {{ transform: translateX(-40px) translateY(-20px); opacity: 0; filter: blur(5px); }} 100% {{ transform: translateX(0) translateY(0); opacity: 1; filter: blur(0); }} }}
-    @keyframes cyberAssemblyRight {{ 0% {{ transform: translateX(40px) translateY(20px); opacity: 0; filter: blur(5px); }} 100% {{ transform: translateX(0) translateY(0); opacity: 1; filter: blur(0); }} }}
-    @keyframes cyberAssemblyCenter {{ 0% {{ transform: scale(0.5); opacity: 0; }} 60% {{ transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 20px #D946EF); }} 100% {{ transform: scale(1); opacity: 1; }} }}
+    /* LOGIN PAGE ANIMATIONS */
+    @keyframes spin {{ 100% {{ transform: rotate(360deg); }} }}
+    @keyframes cyberAssembleLeft {{ 0% {{ transform: translateX(-40px) translateY(-20px); opacity: 0; filter: blur(5px); }} 100% {{ transform: translateX(0) translateY(0); opacity: 1; filter: blur(0); }} }}
+    @keyframes cyberAssembleRight {{ 0% {{ transform: translateX(40px) translateY(20px); opacity: 0; filter: blur(5px); }} 100% {{ transform: translateX(0) translateY(0); opacity: 1; filter: blur(0); }} }}
     @keyframes formCascade {{ 0% {{ opacity: 0; transform: translateY(30px); }} 100% {{ opacity: 1; transform: translateY(0); }} }}
 
-    .split-left {{ animation: cyberAssemblyLeft 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }}
-    .split-right {{ animation: cyberAssemblyRight 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }}
-    .split-center {{ animation: cyberAssemblyCenter 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }}
-    .login-svg {{ animation: pulseGlow 4s infinite 1.5s; overflow: visible; }}
+    .spin-slow {{ animation: spin 20s linear infinite; transform-origin: 50px 50px; }}
+    .anim-left {{ animation: cyberAssembleLeft 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }}
+    .anim-right {{ animation: cyberAssembleRight 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }}
 
     /* Scope the delays ONLY to the login page to keep the main app fast */
-    body:has(#login-page-marker) .vidhi-title {{ animation: formCascade 0.8s ease-out 1s forwards; opacity: 0; }}
-    body:has(#login-page-marker) .temple-divider {{ animation: formCascade 0.8s ease-out 1.1s forwards; opacity: 0; }}
-    body:has(#login-page-marker) .vidhi-subtitle {{ animation: formCascade 0.8s ease-out 1.2s forwards; opacity: 0; }}
+    body:has(#login-page-marker) .aequilex-title-container {{ animation: formCascade 0.8s ease-out 1s forwards; opacity: 0; }}
     body:has(#login-page-marker) div[data-testid="stTabs"] {{ animation: formCascade 1s cubic-bezier(0.2, 0.8, 0.2, 1) 1.5s forwards; opacity: 0; }}
 
     .stApp {{ animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }}
@@ -67,13 +78,12 @@ st.markdown(f"""
     .block-container {{ padding-top: 2rem !important; padding-bottom: 6rem !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 1.5rem !important; }}
     
-    /* Hide the "Press Enter to apply" instructions from inputs */
     div[data-testid="InputInstructions"] {{ display: none !important; }}
 
     /* FORCE OBSIDIAN THEME ACROSS CONTAINERS */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stMainBlockContainer"] {{ background-color: {t_bg} !important; color: {t_text} !important; font-family: 'Inter', sans-serif; }}
     section[data-testid="stSidebar"] {{ background-color: {t_container} !important; border-right: 1px solid {t_border} !important; }}
-    h1, h2, h3, h4, h5, h6 {{ font-family: 'Cinzel', serif !important; font-weight: 600 !important; color: {t_text} !important; transition: color 0.3s ease; }}
+    h1, h2, h3, h4, h5, h6 {{ font-family: 'Rajdhani', sans-serif !important; font-weight: 700 !important; color: {t_text} !important; transition: color 0.3s ease; text-transform: uppercase; letter-spacing: 1px; }}
     div[data-testid="stBottom"], div[data-testid="stBottomBlockContainer"] {{ background-color: {t_bg} !important; background: {t_bg} !important; }}
     div[data-testid="stBottom"] > div {{ background-color: transparent !important; }}
 
@@ -91,8 +101,9 @@ st.markdown(f"""
     }}
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] {{ width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: flex-start !important; }}
     div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {{
-        font-size: 0.95rem !important; font-weight: 600 !important; color: {t_subtext} !important; margin: 0 !important; padding: 0 !important; line-height: 1 !important; text-align: left !important;
+        font-size: 0.85rem !important; font-weight: 700 !important; color: {t_subtext} !important; margin: 0 !important; padding: 0 !important; line-height: 1 !important; text-align: left !important;
         display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 12px !important; width: 100% !important; height: 100% !important; transition: color 0.3s ease !important;
+        text-transform: uppercase; letter-spacing: 1px;
     }}
 
     div[role="radiogroup"] label:hover {{ background-color: rgba(139, 92, 246, 0.05) !important; border-color: {t_border_cyber} !important; transform: translateX(4px); }}
@@ -109,13 +120,9 @@ st.markdown(f"""
         position: sticky !important; top: 0rem !important; z-index: 999 !important; background-color: {t_bg} !important; padding: 15px 0px 15px 0px !important; border-bottom: 1px solid {t_border} !important; margin-bottom: 20px !important;
     }}
 
-    .vidhi-title-container {{ width: 100%; text-align: center; padding-top: 2vh; padding-bottom: 2rem; }}
-    .vidhi-title {{
-        font-size: clamp(2.5rem, 6vw, 4.5rem); margin: 0 auto; background: linear-gradient(135deg, #BF953F 0%, #FCF6BA 40%, #B38728 60%, #AA771C 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; color: transparent; letter-spacing: 0.15em; white-space: nowrap !important; font-weight: 700 !important;
-    }}
-    .temple-divider {{ height: 1px; width: 200px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent); margin: 15px auto; }}
-    .vidhi-subtitle {{ color: {t_subtext}; font-size: 0.8rem; letter-spacing: 4px; text-transform: uppercase; }}
+    .aequilex-title-container {{ width: 100%; text-align: center; padding-top: 2vh; padding-bottom: 2rem; }}
+    
+    .aequilex-subtitle {{ color: #D946EF; font-size: 0.7rem; letter-spacing: 4px; text-transform: uppercase; font-weight: bold; margin-top: 15px; }}
     p, label, span, div {{ color: {t_text}; }}
 
     ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
@@ -126,7 +133,6 @@ st.markdown(f"""
     div[data-baseweb="select"] > div {{ background-color: {t_input_bg} !important; border: 1px solid {t_border} !important; color: {t_text} !important; border-radius: 6px !important; transition: all 0.3s ease !important; }}
     div[data-baseweb="select"] > div:hover, div[data-baseweb="select"] > div:focus-within {{ border-color: #8B5CF6 !important; box-shadow: 0 0 10px rgba(139, 92, 246, 0.1) !important; }}
     
-    /* Make dropdown options clickable only (prevent text selection) */
     div[data-baseweb="popover"] {{ 
         background-color: {t_container} !important; border: 1px solid #8B5CF6 !important; transition: all 0.3s ease; 
         user-select: none !important; -webkit-user-select: none !important; 
@@ -142,7 +148,7 @@ st.markdown(f"""
     .stTextInput > div > div > input:focus, .stChatInput textarea:focus, .stTextArea textarea:focus {{ border-color: #8B5CF6 !important; box-shadow: 0 0 15px rgba(139, 92, 246, 0.2) !important; }}
 
     .stButton > button {{
-        background: linear-gradient(135deg, #0A0A0B 0%, #111 100%) !important; color: #D4AF37 !important; font-family: 'Cinzel', serif !important; font-weight: 600 !important;
+        background: linear-gradient(135deg, #0A0A0B 0%, #111 100%) !important; color: #D4AF37 !important; font-family: 'Rajdhani', sans-serif !important; font-weight: 700 !important;
         border: 1px solid rgba(212, 175, 55, 0.5) !important; border-radius: 8px !important; text-transform: uppercase; letter-spacing: 1.5px; width: 100%; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
     .stButton > button:hover {{
@@ -259,7 +265,7 @@ def process_uploaded_file(uploaded_file):
     except Exception as e: return f"Error reading file: {e}", None
     return None, None
 
-def generate_word_document(query, response, title="VidhiDesk Legal Document"):
+def generate_word_document(query, response, title="Aequilex Legal Document"):
     doc = Document()
     doc.add_heading(title, 0)
     if query:
@@ -279,7 +285,7 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
         yield f"❌ **System Config Error:** {str(e)}"
         return
     
-    sys_instruction = f"ROLE: You are VidhiDesk, an elite legal research assistant for {institution}.\nTONE: {tone} | DEPTH: {difficulty}\nMANDATE: Prioritize Indian Statutes (BNS, BNSS, BSA, Constitution). Cite relevant Case Laws. Use Markdown."
+    sys_instruction = f"ROLE: You are AEQUILEX, an elite legal AI for {institution}.\nTONE: {tone} | DEPTH: {difficulty}\nMANDATE: Prioritize Indian Statutes (BNS, BNSS, BSA, Constitution). Cite relevant Case Laws. Use Markdown."
     if strict_citation: sys_instruction += "\nCRITICAL RULE (STRICT CITATION MODE): You MUST ONLY cite real, verifiable Indian case laws. Provide the exact year, volume, and court. Under NO circumstances should you invent or hallucinate a case. If you cannot find a verifiable precedent, explicitly state 'No verifiable case law found for this specific query'."
 
     config = types.GenerateContentConfig(temperature=0.1 if strict_citation else 0.3, system_instruction=sys_instruction)
@@ -311,7 +317,7 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
                 yield "❌ **Authentication Failed:** API key invalid or revoked."
                 return
             continue 
-    yield "❌ **System Unavailable:** AI servers failed to respond."
+    yield "❌ **System Unavailable:** Aequilex AI servers failed to respond."
 
 def get_drafting_stream(doc_type, client_info, facts, pdf_text=None, image_data=None, audio_bytes=None):
     try: client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
@@ -358,7 +364,7 @@ def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
         yield "❌ **System Config Error.**"
         return
         
-    sys_instruction = "ROLE: You are an archiving assistant. Extract the key legal facts, summary, and core arguments from the provided document, image, or audio memo. Format it cleanly in Markdown so it can be saved to a database."
+    sys_instruction = "ROLE: You are an archiving assistant for Aequilex. Extract the key legal facts, summary, and core arguments from the provided document, image, or audio memo. Format it cleanly in Markdown so it can be saved to a database."
     parts = [{"text": sys_instruction}]
     if pdf_text: parts.append({"text": f"\n[DOCUMENT TO ARCHIVE]:\n{pdf_text[:15000]}"})
     if image_data: parts.append(image_data)
@@ -374,21 +380,49 @@ def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
 def login_page():
     st.markdown("<div id='login-page-marker'></div>", unsafe_allow_html=True)
     st.markdown("""
-        <div class='vidhi-title-container'>
+        <div class='aequilex-title-container'>
             <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                <svg viewBox="0 0 100 100" class="login-svg" style="width: 140px; height: 140px;">
+                <!-- ZODIAC DIAL SVG -->
+                <svg viewBox="0 0 100 100" class="login-svg spin-slow" style="width: 140px; height: 140px; overflow: visible;">
                     <defs>
-                        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#BF953F"/><stop offset="40%" stop-color="#FCF6BA"/><stop offset="100%" stop-color="#AA771C"/></linearGradient>
-                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D946EF" /><stop offset="50%" stop-color="#8B5CF6" /><stop offset="100%" stop-color="#4C1D95" /></linearGradient>
+                        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#BF953F" />
+                            <stop offset="40%" stop-color="#FCF6BA" />
+                            <stop offset="100%" stop-color="#AA771C" />
+                        </linearGradient>
+                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#D946EF" />
+                            <stop offset="50%" stop-color="#8B5CF6" />
+                            <stop offset="100%" stop-color="#4C1D95" />
+                        </linearGradient>
+                        <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#1A1A1A" />
+                            <stop offset="100%" stop-color="#050505" />
+                        </linearGradient>
                     </defs>
-                    <g class="split-center"><path d="M 30 20 L 50 80 L 70 20 L 60 20 L 50 55 L 40 20 Z" fill="url(#g1)"/></g>
-                    <g class="split-left"><path d="M 10 10 L 25 30 L 15 50 L 45 95 L 50 85 L 30 50 L 40 30 L 20 10 Z" fill="url(#cyber)"/><polygon points="50,5 53,15 50,25 47,15" fill="url(#cyber)"/></g>
-                    <g class="split-right"><path d="M 90 10 L 75 30 L 85 50 L 55 95 L 50 85 L 70 50 L 60 30 L 80 10 Z" fill="url(#cyber)"/><polygon points="50,90 52,95 50,100 48,95" fill="url(#cyber)"/></g>
+                    <g class="spin-slow">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
+                        <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
+                    </g>
+                    <g class="anim-left">
+                        <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+                        <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+                    </g>
+                    <g class="anim-right">
+                        <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
+                        <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
+                    </g>
                 </svg>
             </div>
-            <h1 class='vidhi-title'>VIDHIDESK</h1>
-            <div class='temple-divider'></div>
-            <div class='vidhi-subtitle' style='color: #D946EF;'>Your AI-Powered Legal Research Assistant</div>
+            
+            <div style="text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-family: 'Audiowide', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); display: flex; align-items: center; justify-content: center; line-height: 1;">
+                    <span class="cyber-text">AEQUILEX</span>
+                </div>
+                <div style="height: 1px; width: 192px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent); margin: 20px auto;"></div>
+                <div class="aequilex-subtitle">Your AI-Powered Legal Assistant</div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -428,33 +462,53 @@ def login_page():
             with tab_guest:
                 st.markdown("<br><p style='text-align: center; font-size: 0.9rem;'>Temporary access mode. Data will be tied to a temporary session.</p><br>", unsafe_allow_html=True)
                 if st.button("CONTINUE AS GUEST", type="secondary", use_container_width=True):
-                    st.session_state.user = { "email": f"guest_{int(time.time())}@vidhidesk.local", "name": "Guest User", "institution": "Independent Researcher", "year": "N/A", "tier": "free" }
+                    st.session_state.user = { "email": f"guest_{int(time.time())}@aequilex.local", "name": "Guest User", "institution": "Independent Researcher", "year": "N/A", "tier": "free" }
                     st.rerun()
 
 def main_app():
     with st.sidebar:
         st.markdown(f"""
             <div style='display: flex; align-items: center; margin-bottom: 10px; animation: fadeIn 0.8s ease-out;'>
-                <svg viewBox="0 0 100 100" style="width: 50px; height: 50px; margin-right: 15px; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.4));">
+                <svg viewBox="0 0 100 100" style="width: 45px; height: 45px; margin-right: 15px; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.4)); overflow: visible;">
                     <defs>
-                        <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#BF953F"/><stop offset="40%" stop-color="#FCF6BA"/><stop offset="100%" stop-color="#AA771C"/></linearGradient>
-                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#D946EF" /><stop offset="50%" stop-color="#8B5CF6" /><stop offset="100%" stop-color="#4C1D95" /></linearGradient>
+                        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#BF953F" />
+                            <stop offset="40%" stop-color="#FCF6BA" />
+                            <stop offset="100%" stop-color="#AA771C" />
+                        </linearGradient>
+                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#D946EF" />
+                            <stop offset="50%" stop-color="#8B5CF6" />
+                            <stop offset="100%" stop-color="#4C1D95" />
+                        </linearGradient>
+                        <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#1A1A1A" />
+                            <stop offset="100%" stop-color="#050505" />
+                        </linearGradient>
                     </defs>
-                    <path d="M 30 20 L 50 80 L 70 20 L 60 20 L 50 55 L 40 20 Z" fill="url(#g1)"/>
-                    <path d="M 10 10 L 25 30 L 15 50 L 45 95 L 50 85 L 30 50 L 40 30 L 20 10 Z" fill="url(#cyber)"/>
-                    <path d="M 90 10 L 75 30 L 85 50 L 55 95 L 50 85 L 70 50 L 60 30 L 80 10 Z" fill="url(#cyber)"/>
-                    <polygon points="50,5 53,15 50,25 47,15" fill="url(#cyber)"/>
-                    <polygon points="50,90 52,95 50,100 48,95" fill="url(#cyber)"/>
+                    <g>
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
+                        <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
+                        <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
+                    </g>
+                    <g>
+                        <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+                        <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+                    </g>
+                    <g>
+                        <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
+                        <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
+                    </g>
                 </svg>
                 <div>
-                    <h2 style="margin:0; font-size:1.6rem; letter-spacing:1px; line-height: 1.1; font-family: 'Cinzel', serif; color: #E2E8F0;">VIDHIDESK</h2>
-                    <span style="font-size: 0.65rem; color: #D946EF; letter-spacing: 3px; font-weight: 600; text-transform: uppercase;">Intelligence</span>
+                    <h2 style="margin:0; font-size:1.4rem; line-height: 1.1; font-family: 'Audiowide', sans-serif; color: #E2E8F0; letter-spacing: 0.05em;">AEQUILEX</h2>
+                    <span style="font-size: 0.60rem; color: #D946EF; letter-spacing: 3px; font-weight: 600; text-transform: uppercase;">Intelligence</span>
                 </div>
             </div>
-            <div class='temple-divider' style='margin: 15px 0 20px 0; width: 100%; background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
+            <div class='temple-divider' style='margin: 15px 0 20px 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
         """, unsafe_allow_html=True)
         
-        st.markdown(f"<h3 style='margin-bottom: 0; color: {t_text} !important; font-size: 1.1rem;'>{st.session_state.user['name'].upper()}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='margin-bottom: 0; color: {t_text} !important; font-size: 1.1rem; font-family: Inter, sans-serif !important; text-transform: none; letter-spacing: normal;'>{st.session_state.user['name'].upper()}</h3>", unsafe_allow_html=True)
         st.markdown(f"<span style='color: #8B5CF6; font-size: 0.8rem; font-weight: 500;'>{st.session_state.user['institution']}</span>", unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
@@ -499,7 +553,7 @@ def main_app():
                     <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
                     <span style='color: #D946EF; font-weight:600;'>System Online</span>
                 </div>
-                <div style='font-size: 0.7rem; color: {t_subtext};'>Engine: GenAI 2.5 Streaming</div>
+                <div style='font-size: 0.7rem; color: {t_subtext};'>Powered by Aequilex AI</div>
             </div>
             """, unsafe_allow_html=True)
         else: st.error("Config Error: API Key missing.")
@@ -517,7 +571,7 @@ def main_app():
         with sticky_header:
             st.markdown("<span id='sticky-header-marker'></span>", unsafe_allow_html=True)
             st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>RESEARCH CORE</h2>", unsafe_allow_html=True)
-            st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
+            st.markdown("<div class='temple-divider' style='margin: 10px 0 20px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent); height: 1px;'></div>", unsafe_allow_html=True)
 
             param_col, mic_col = st.columns([0.85, 0.15], vertical_alignment="center")
             with param_col:
@@ -540,7 +594,7 @@ def main_app():
 
         history = db.get_history(st.session_state.user['email'], workspace_id=st.session_state.current_workspace['id'])
         for msg in history:
-            avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚖️"
+            avatar = "🧑‍⚖️" if msg['role'] == "user" else "⚡"
             with st.chat_message(msg['role'], avatar=avatar): st.markdown(msg['content'])
 
         query = st.chat_input("Enter legal query, section, or case citation...")
@@ -554,7 +608,7 @@ def main_app():
                     if not query: query = "Please analyze this audio recording."
             
             db.save_message(st.session_state.user['email'], "user", query, workspace_id=st.session_state.current_workspace['id'])
-            with st.chat_message("assistant", avatar="⚖️"):
+            with st.chat_message("assistant", avatar="⚡"):
                 pdf_text, image_data = process_uploaded_file(uploaded_file)
                 audio_bytes = audio_data.getvalue() if is_audio_submission else None
                 
@@ -579,7 +633,7 @@ def main_app():
     # --- DRAFTING STUDIO ---
     elif nav == "✍️ Drafting Studio":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>DRAFTING STUDIO</h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent); height: 1px;'></div>", unsafe_allow_html=True)
         st.markdown("Automated generation of court-ready legal documents based on explicit facts.", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -619,12 +673,12 @@ def main_app():
                     if "❌" not in final_draft:
                         context_note = f"Facts provided:\n{facts}\n\n[References were included]" 
                         doc_bytes = generate_word_document(context_note, final_draft, title=f"Draft: {doc_type}")
-                        st.download_button(label="📄 DOWNLOAD DRAFT AS WORD", data=doc_bytes, file_name=f"Draft_{doc_type.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+                        st.download_button(label="📄 DOWNLOAD DRAFT AS WORD", data=doc_bytes, file_name=f"Aequilex_Draft_{doc_type.replace(' ', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
 
     # --- TRANSLATION DESK ---
     elif nav == "🌍 Translate Desk":
         st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>TRANSLATION DESK</h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent); height: 1px;'></div>", unsafe_allow_html=True)
         st.markdown("High-fidelity legal translation preserving complex terminology and legal nuances.", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -657,16 +711,16 @@ def main_app():
                     
                     if "❌" not in final_translation:
                         context_note = f"Source Text:\n{source_text}\n\n[References Included]" 
-                        doc_bytes = generate_word_document(context_note, final_translation, title=f"Legal Translation ({target_lang})")
-                        st.download_button(label="📄 DOWNLOAD TRANSLATION AS WORD", data=doc_bytes, file_name=f"Translation_{target_lang}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
+                        doc_bytes = generate_word_document(context_note, final_translation, title=f"Aequilex Translation ({target_lang})")
+                        st.download_button(label="📄 DOWNLOAD TRANSLATION AS WORD", data=doc_bytes, file_name=f"Aequilex_Translation_{target_lang}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", type="primary")
 
     # --- VAULT ---
     elif nav == "📚 Knowledge Vault":
-        st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>KNOWLEDGE VAULT <span style='font-size:0.5em; color:{t_subtext};'>[{st.session_state.current_workspace['name']}]</span></h2>", unsafe_allow_html=True)
-        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent);'></div>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='margin-bottom: 0; color: {t_text} !important;'>KNOWLEDGE VAULT <span style='font-size:0.5em; color:{t_subtext}; text-transform:none; font-family: Inter, sans-serif;'>[{st.session_state.current_workspace['name']}]</span></h2>", unsafe_allow_html=True)
+        st.markdown("<div class='temple-divider' style='margin: 10px 0 30px 0; width: 80px; margin-left: 0; background: linear-gradient(90deg, #D4AF37, transparent); height: 1px;'></div>", unsafe_allow_html=True)
         
         with st.popover("➕ QUICK ANALYZE & ADD TO VAULT", use_container_width=True):
-            st.markdown("Upload a complex legal document/image or dictate a voice memo. VidhiDesk will extract the core facts and archive them instantly.")
+            st.markdown("Upload a complex legal document/image or dictate a voice memo. Aequilex will extract the core facts and archive them instantly.")
             vc1, vc2, vc3 = st.columns([1, 1, 1])
             with vc1: uploaded_file = st.file_uploader("Upload File", type=["pdf", "png", "jpg", "jpeg"], key="vault_pdf")
             with vc2: vault_audio = st.audio_input("Record Memo", key="vault_audio")
@@ -703,7 +757,7 @@ def main_app():
                                     st.rerun()
                             with col2:
                                 doc_bytes = generate_word_document(item['query'], item['response'])
-                                st.download_button(label="📄 EXPORT TO WORD", data=doc_bytes, file_name=f"VidhiDesk_Research_{item['id']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"dl_{item['id']}")
+                                st.download_button(label="📄 EXPORT TO WORD", data=doc_bytes, file_name=f"Aequilex_Research_{item['id']}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key=f"dl_{item['id']}")
 
 if __name__ == "__main__":
     if st.session_state.user: main_app()
