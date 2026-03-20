@@ -579,7 +579,7 @@ Q
         else: st.error("Config Error: API Key missing.")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("TERMINATE UPLINK", type="secondary"):
+        if st.button("Log Out", type="secondary"):
             db.logout(st.session_state.user["email"])
             st.session_state.user = None
             if "auth_token" in st.query_params: del st.query_params["auth_token"]
