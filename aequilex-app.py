@@ -130,9 +130,10 @@ st.markdown(f"""
     ::-webkit-scrollbar-thumb {{ background: rgba(139, 92, 246, 0.4); border-radius: 4px; transition: background 0.3s; }}
     ::-webkit-scrollbar-thumb:hover {{ background: rgba(139, 92, 246, 0.8); }}
 
+    /* STREAMLIT SELECTBOX FIX - HIDDEN CARET */
     div[data-baseweb="select"] > div {{ background-color: {t_input_bg} !important; border: 1px solid {t_border} !important; color: {t_text} !important; border-radius: 6px !important; transition: all 0.3s ease !important; cursor: pointer !important; }}
     div[data-baseweb="select"] > div:hover, div[data-baseweb="select"] > div:focus-within {{ border-color: #8B5CF6 !important; box-shadow: 0 0 10px rgba(139, 92, 246, 0.1) !important; }}
-    div[data-baseweb="select"] input {{ cursor: pointer !important; }}
+    div[data-baseweb="select"] input {{ cursor: pointer !important; caret-color: transparent !important; }}
     
     div[data-baseweb="popover"] {{ 
         background-color: {t_container} !important; border: 1px solid #8B5CF6 !important; transition: all 0.3s ease; 
