@@ -380,51 +380,60 @@ def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
 def login_page():
     st.markdown("<div id='login-page-marker'></div>", unsafe_allow_html=True)
     st.markdown("""
-        <div class='aequilex-title-container'>
-            <div style="display: flex; justify-content: center; margin-bottom: 25px;">
-                <!-- ZODIAC DIAL SVG -->
-                <svg viewBox="0 0 100 100" class="login-svg spin-slow" style="width: 140px; height: 140px; overflow: visible;">
-                    <defs>
-                        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#BF953F" />
-                            <stop offset="40%" stop-color="#FCF6BA" />
-                            <stop offset="100%" stop-color="#AA771C" />
-                        </linearGradient>
-                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#D946EF" />
-                            <stop offset="50%" stop-color="#8B5CF6" />
-                            <stop offset="100%" stop-color="#4C1D95" />
-                        </linearGradient>
-                        <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#1A1A1A" />
-                            <stop offset="100%" stop-color="#050505" />
-                        </linearGradient>
-                    </defs>
-                    <g class="spin-slow">
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
-                        <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
-                        <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
-                    </g>
-                    <g class="anim-left">
-                        <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
-                        <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
-                    </g>
-                    <g class="anim-right">
-                        <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
-                        <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
-                    </g>
+<div class='aequilex-title-container'>
+    <div style="display: flex; justify-content: center; margin-bottom: 25px;">
+        <!-- ZODIAC DIAL SVG -->
+        <svg viewBox="0 0 100 100" style="width: 140px; height: 140px; overflow: visible;">
+            <defs>
+                <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#BF953F" />
+                    <stop offset="40%" stop-color="#FCF6BA" />
+                    <stop offset="100%" stop-color="#AA771C" />
+                </linearGradient>
+                <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#D946EF" />
+                    <stop offset="50%" stop-color="#8B5CF6" />
+                    <stop offset="100%" stop-color="#4C1D95" />
+                </linearGradient>
+                <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#1A1A1A" />
+                    <stop offset="100%" stop-color="#050505" />
+                </linearGradient>
+            </defs>
+            <g class="spin-slow">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
+                <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
+                <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
+            </g>
+            <g class="anim-left">
+                <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+                <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+            </g>
+            <g class="anim-right">
+                <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
+                <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
+            </g>
+        </svg>
+    </div>
+    
+    <div style="text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <div style="font-family: 'Audiowide', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); display: flex; align-items: center; justify-content: center; line-height: 1;">
+            <span class="cyber-text">AE</span>
+            <span class="cyber-text" style="position: relative; display: inline-flex; align-items: center; justify-content: center; margin: 0 -0.05em; font-family: 'Syne', sans-serif;">
+                Q
+                <svg style="position: absolute; bottom: -0.2em; left: 50%; transform: translateX(-50%); width: 0.65em; height: 0.65em; pointer-events: none; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8));" viewBox="0 0 100 100">
+                    <path d="M 35 15 L 65 15 L 60 25 L 40 25 Z" fill="url(#gold)"/>
+                    <path d="M 42 25 L 25 85 L 45 85 L 48 25 Z" fill="url(#gold)"/>
+                    <path d="M 58 25 L 75 85 L 55 85 L 52 25 Z" fill="url(#gold)"/>
                 </svg>
-            </div>
-            
-            <div style="text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center;">
-                <div style="font-family: 'Audiowide', sans-serif; font-size: clamp(3rem, 6vw, 4.5rem); display: flex; align-items: center; justify-content: center; line-height: 1;">
-                    <span class="cyber-text">AEQUILEX</span>
-                </div>
-                <div style="height: 1px; width: 192px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent); margin: 20px auto;"></div>
-                <div class="aequilex-subtitle">Your AI-Powered Legal Assistant</div>
-            </div>
+            </span>
+            <span class="cyber-text">UILEX</span>
         </div>
-    """, unsafe_allow_html=True)
+        <div style="height: 1px; width: 192px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent); margin: 20px auto;"></div>
+        <div class="aequilex-subtitle">Your AI-Powered Legal Assistant</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
     
     c1, c2, c3 = st.columns([1, 1.2, 1])
     with c2:
@@ -467,46 +476,57 @@ def login_page():
 
 def main_app():
     with st.sidebar:
-        st.markdown(f"""
-            <div style='display: flex; align-items: center; margin-bottom: 10px; animation: fadeIn 0.8s ease-out;'>
-                <svg viewBox="0 0 100 100" style="width: 45px; height: 45px; margin-right: 15px; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.4)); overflow: visible;">
-                    <defs>
-                        <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#BF953F" />
-                            <stop offset="40%" stop-color="#FCF6BA" />
-                            <stop offset="100%" stop-color="#AA771C" />
-                        </linearGradient>
-                        <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#D946EF" />
-                            <stop offset="50%" stop-color="#8B5CF6" />
-                            <stop offset="100%" stop-color="#4C1D95" />
-                        </linearGradient>
-                        <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#1A1A1A" />
-                            <stop offset="100%" stop-color="#050505" />
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
-                        <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
-                        <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
-                    </g>
-                    <g>
-                        <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
-                        <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
-                    </g>
-                    <g>
-                        <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
-                        <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
-                    </g>
+        st.markdown("""
+<div style='display: flex; align-items: center; margin-bottom: 10px; animation: fadeIn 0.8s ease-out;'>
+    <svg viewBox="0 0 100 100" style="width: 45px; height: 45px; margin-right: 15px; flex-shrink: 0; filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.4)); overflow: visible;">
+        <defs>
+            <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#BF953F" />
+                <stop offset="40%" stop-color="#FCF6BA" />
+                <stop offset="100%" stop-color="#AA771C" />
+            </linearGradient>
+            <linearGradient id="cyber" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#D946EF" />
+                <stop offset="50%" stop-color="#8B5CF6" />
+                <stop offset="100%" stop-color="#4C1D95" />
+            </linearGradient>
+            <linearGradient id="obsidian" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1A1A1A" />
+                <stop offset="100%" stop-color="#050505" />
+            </linearGradient>
+        </defs>
+        <g>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="url(#cyber)" stroke-width="1" stroke-dasharray="1 5"/>
+            <circle cx="50" cy="50" r="35" fill="none" stroke="url(#gold)" stroke-width="2" stroke-dasharray="20 10 5 10"/>
+            <circle cx="50" cy="50" r="28" fill="none" stroke="url(#cyber)" stroke-width="0.5"/>
+        </g>
+        <g>
+            <line x1="10" y1="50" x2="90" y2="50" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+            <line x1="50" y1="10" x2="50" y2="90" stroke="url(#gold)" stroke-width="1" opacity="0.5"/>
+        </g>
+        <g>
+            <path d="M 50 20 L 25 75 H 40 L 50 50 L 60 75 H 75 Z" fill="url(#obsidian)" stroke="url(#cyber)" stroke-width="2"/>
+            <polygon points="45,60 55,60 50,70" fill="url(#gold)"/>
+        </g>
+    </svg>
+    <div style="display:flex; flex-direction:column;">
+        <div style="font-family: 'Audiowide', sans-serif; font-size: 1.4rem; display: flex; align-items: center; line-height: 1; color: #E2E8F0;">
+            <span>AE</span>
+            <span style="position: relative; display: inline-flex; align-items: center; justify-content: center; margin: 0 -0.05em; font-family: 'Syne', sans-serif;">
+                Q
+                <svg style="position: absolute; bottom: -0.2em; left: 50%; transform: translateX(-50%); width: 0.55em; height: 0.55em; pointer-events: none;" viewBox="0 0 100 100">
+                    <path d="M 35 15 L 65 15 L 60 25 L 40 25 Z" fill="url(#gold)"/>
+                    <path d="M 42 25 L 25 85 L 45 85 L 48 25 Z" fill="url(#gold)"/>
+                    <path d="M 58 25 L 75 85 L 55 85 L 52 25 Z" fill="url(#gold)"/>
                 </svg>
-                <div>
-                    <h2 style="margin:0; font-size:1.4rem; line-height: 1.1; font-family: 'Audiowide', sans-serif; color: #E2E8F0; letter-spacing: 0.05em;">AEQUILEX</h2>
-                    <span style="font-size: 0.60rem; color: #D946EF; letter-spacing: 3px; font-weight: 600; text-transform: uppercase;">Intelligence</span>
-                </div>
-            </div>
-            <div class='temple-divider' style='margin: 15px 0 20px 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
-        """, unsafe_allow_html=True)
+            </span>
+            <span>UILEX</span>
+        </div>
+        <span style="font-size: 0.60rem; color: #D946EF; letter-spacing: 3px; font-weight: 600; text-transform: uppercase; margin-top: 2px;">Intelligence</span>
+    </div>
+</div>
+<div class='temple-divider' style='margin: 15px 0 20px 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, #8B5CF6, transparent);'></div>
+""", unsafe_allow_html=True)
         
         st.markdown(f"<h3 style='margin-bottom: 0; color: {t_text} !important; font-size: 1.1rem; font-family: Inter, sans-serif !important; text-transform: none; letter-spacing: normal;'>{st.session_state.user['name'].upper()}</h3>", unsafe_allow_html=True)
         st.markdown(f"<span style='color: #8B5CF6; font-size: 0.8rem; font-weight: 500;'>{st.session_state.user['institution']}</span>", unsafe_allow_html=True)
@@ -548,13 +568,13 @@ def main_app():
         st.markdown("<br>", unsafe_allow_html=True)
         if "GEMINI_API_KEY" in st.secrets:
             st.markdown(f"""
-            <div style='border: 1px solid {t_border_cyber}; padding: 12px; border-radius: 6px; background: rgba(139, 92, 246, 0.05); margin-top:10px; transition: all 0.3s ease;'>
-                <div style='display:flex; align-items:center; margin-bottom:5px;'>
-                    <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
-                    <span style='color: #D946EF; font-weight:600;'>System Online</span>
-                </div>
-                <div style='font-size: 0.7rem; color: {t_subtext};'>Powered by Aequilex AI</div>
-            </div>
+<div style='border: 1px solid {t_border_cyber}; padding: 12px; border-radius: 6px; background: rgba(139, 92, 246, 0.05); margin-top:10px; transition: all 0.3s ease;'>
+    <div style='display:flex; align-items:center; margin-bottom:5px;'>
+        <span style='color: #4CAF50; font-size: 1.2rem; margin-right: 8px;'>●</span> 
+        <span style='color: #D946EF; font-weight:600;'>System Online</span>
+    </div>
+    <div style='font-size: 0.7rem; color: {t_subtext};'>Powered by Aequilex AI</div>
+</div>
             """, unsafe_allow_html=True)
         else: st.error("Config Error: API Key missing.")
         
