@@ -281,6 +281,15 @@ def generate_word_document(query, response, title="Aequilex Legal Document"):
     return bio.getvalue()
 
 # --- 6. AI ENGINE ---
+
+# Define global safety overrides for legal terminology (Bypass generic censorship)
+LEGAL_SAFETY_SETTINGS = [
+    types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HARASSMENT, threshold=types.HarmBlockThreshold.BLOCK_NONE),
+    types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold=types.HarmBlockThreshold.BLOCK_NONE),
+    types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold=types.HarmBlockThreshold.BLOCK_NONE),
+    types.SafetySetting(category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold=types.HarmBlockThreshold.BLOCK_NONE),
+]
+
 def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_text=None, image_data=None, audio_bytes=None, enable_search=False, strict_citation=False):
     try: client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
     except Exception as e:
@@ -290,13 +299,16 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
     sys_instruction = f"ROLE: You are AEQUILEX, an elite legal AI for {institution}.\nTONE: {tone} | DEPTH: {difficulty}\nMANDATE: Prioritize Indian Statutes (BNS, BNSS, BSA, Constitution). Cite relevant Case Laws. Use Markdown."
     if strict_citation: sys_instruction += "\nCRITICAL RULE (STRICT CITATION MODE): You MUST ONLY cite real, verifiable Indian case laws. Provide the exact year, volume, and court. Under NO circumstances should you invent or hallucinate a case. If you cannot find a verifiable precedent, explicitly state 'No verifiable case law found for this specific query'."
 
-    config = types.GenerateContentConfig(temperature=0.1 if strict_citation else 0.3, system_instruction=sys_instruction)
+    config = types.GenerateContentConfig(
+        temperature=0.1 if strict_citation else 0.3, 
+        system_instruction=sys_instruction,
+        safety_settings=LEGAL_SAFETY_SETTINGS
+    )
     if enable_search: config.tools = [{"google_search": {}}]
 
     contents = []
     for msg in chat_history:
         role = "user" if msg["role"] == "user" else "model"
-        # Force strict typing to prevent 400 Bad Request errors
         contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
 
     current_parts = []
@@ -308,23 +320,25 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
     if current_parts: contents.append(types.Content(role="user", parts=current_parts))
     if not contents: return
 
-    # Expanded fallback list
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']
     last_error = ""
+    
     for model_name in models_to_try:
+        streamed_any_text = False
         try:
             response_stream = client.models.generate_content_stream(model=model_name, contents=contents, config=config)
             for chunk in response_stream:
-                if chunk.text: yield chunk.text
+                if chunk.text:
+                    streamed_any_text = True
+                    yield chunk.text
             return 
         except Exception as e:
             last_error = str(e)
-            if "API_KEY_INVALID" in str(e) or "not found" in str(e).lower():
-                yield "❌ **Authentication Failed:** API key invalid or revoked."
+            if streamed_any_text:
+                yield f"\n\n❌ **[CONNECTION SEVERED]:** The AI model terminated the stream early due to an internal safety or connection error. Debug: {last_error}"
                 return
             continue 
             
-    # If all models fail, print the exact debug reason to the UI
     yield f"❌ **System Unavailable:** Aequilex AI servers failed to respond.\n\n*Debug Info: {last_error}*"
 
 def get_drafting_stream(doc_type, client_info, facts, pdf_text=None, image_data=None, audio_bytes=None):
@@ -342,18 +356,30 @@ def get_drafting_stream(doc_type, client_info, facts, pdf_text=None, image_data=
     if facts: parts.append(types.Part.from_text(text=f"[CASE FACTS]:\n{facts}"))
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.2)
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    config = types.GenerateContentConfig(
+        system_instruction=sys_instruction, 
+        temperature=0.2,
+        safety_settings=LEGAL_SAFETY_SETTINGS
+    )
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']
     last_error = ""
+    
     for model in models_to_try:
+        streamed_any_text = False
         try:
             response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
             for chunk in response_stream:
-                if chunk.text: yield chunk.text
+                if chunk.text:
+                    streamed_any_text = True
+                    yield chunk.text
             return
         except Exception as e:
             last_error = str(e)
+            if streamed_any_text:
+                yield f"\n\n❌ **[CONNECTION SEVERED]:** Debug: {last_error}"
+                return
             continue
+            
     yield f"❌ **Drafting Engine Error:** {last_error}"
 
 def get_translation_stream(text, target_lang, institution, pdf_text=None, image_data=None, audio_bytes=None):
@@ -370,18 +396,30 @@ def get_translation_stream(text, target_lang, institution, pdf_text=None, image_
     if text: parts.append(types.Part.from_text(text=f"[ADDITIONAL TEXT TO TRANSLATE]:\n{text}"))
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.1)
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    config = types.GenerateContentConfig(
+        system_instruction=sys_instruction, 
+        temperature=0.1,
+        safety_settings=LEGAL_SAFETY_SETTINGS
+    )
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']
     last_error = ""
+    
     for model in models_to_try:
+        streamed_any_text = False
         try:
             response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
             for chunk in response_stream:
-                if chunk.text: yield chunk.text
+                if chunk.text:
+                    streamed_any_text = True
+                    yield chunk.text
             return
         except Exception as e:
             last_error = str(e)
+            if streamed_any_text:
+                yield f"\n\n❌ **[CONNECTION SEVERED]:** Debug: {last_error}"
+                return
             continue
+            
     yield f"❌ **Translation Engine Error:** {last_error}"
 
 def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
@@ -397,18 +435,30 @@ def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
     if image_data: parts.append(image_data)
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.2)
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    config = types.GenerateContentConfig(
+        system_instruction=sys_instruction, 
+        temperature=0.2,
+        safety_settings=LEGAL_SAFETY_SETTINGS
+    )
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.5-flash']
     last_error = ""
+    
     for model in models_to_try:
+        streamed_any_text = False
         try:
             response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
             for chunk in response_stream:
-                if chunk.text: yield chunk.text
+                if chunk.text:
+                    streamed_any_text = True
+                    yield chunk.text
             return
         except Exception as e:
             last_error = str(e)
+            if streamed_any_text:
+                yield f"\n\n❌ **[CONNECTION SEVERED]:** Debug: {last_error}"
+                return
             continue
+            
     yield f"❌ **Archiving Error:** {last_error}"
 
 # --- 7. UI LOGIC ---
