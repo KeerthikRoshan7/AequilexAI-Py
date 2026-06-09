@@ -296,18 +296,21 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
     contents = []
     for msg in chat_history:
         role = "user" if msg["role"] == "user" else "model"
-        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+        # Force strict typing to prevent 400 Bad Request errors
+        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
 
     current_parts = []
-    if pdf_text: current_parts.append({"text": f"[DOCUMENT CONTEXT UPLOADED BY USER]:\n{pdf_text[:15000]}\n\n(Base your answer heavily on the document above if relevant)."})
-    if image_data: current_parts.append(image_data)
+    if pdf_text: current_parts.append(types.Part.from_text(text=f"[DOCUMENT CONTEXT UPLOADED BY USER]:\n{pdf_text[:15000]}\n\n(Base your answer heavily on the document above if relevant)."))
+    if image_data: current_parts.append(image_data) 
     if audio_bytes: current_parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
-    if query: current_parts.append({"text": f"USER QUERY: {query}"})
+    if query: current_parts.append(types.Part.from_text(text=f"USER QUERY: {query}"))
     
-    if current_parts: contents.append({"role": "user", "parts": current_parts})
+    if current_parts: contents.append(types.Content(role="user", parts=current_parts))
     if not contents: return
 
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash']
+    # Expanded fallback list
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro']
+    last_error = ""
     for model_name in models_to_try:
         try:
             response_stream = client.models.generate_content_stream(model=model_name, contents=contents, config=config)
@@ -315,68 +318,98 @@ def get_gemini_stream(query, tone, difficulty, institution, chat_history, pdf_te
                 if chunk.text: yield chunk.text
             return 
         except Exception as e:
+            last_error = str(e)
             if "API_KEY_INVALID" in str(e) or "not found" in str(e).lower():
                 yield "❌ **Authentication Failed:** API key invalid or revoked."
                 return
             continue 
-    yield "❌ **System Unavailable:** Aequilex AI servers failed to respond."
+            
+    # If all models fail, print the exact debug reason to the UI
+    yield f"❌ **System Unavailable:** Aequilex AI servers failed to respond.\n\n*Debug Info: {last_error}*"
 
 def get_drafting_stream(doc_type, client_info, facts, pdf_text=None, image_data=None, audio_bytes=None):
     try: client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception:
-        yield "❌ **System Config Error.**"
+    except Exception as e:
+        yield f"❌ **System Config Error:** {str(e)}"
         return
         
     sys_instruction = f"""ROLE: You are an expert Legal Draftsman. TASK: Draft a professional, court-ready '{doc_type}'. MANDATE: Use strict, formal Indian legal terminology. Format properly using clear headings and numbered paragraphs. Use placeholders like [DATE] or [AMOUNT] for missing facts. Base the entire draft strictly on the provided facts and documents. Do not include conversational filler."""
-    parts = [{"text": sys_instruction}]
-    if pdf_text: parts.append({"text": f"\n[REFERENCE DOCUMENT UPLOADED]:\n{pdf_text[:15000]}"})
+    
+    parts = []
+    if pdf_text: parts.append(types.Part.from_text(text=f"[REFERENCE DOCUMENT UPLOADED]:\n{pdf_text[:15000]}"))
     if image_data: parts.append(image_data)
-    if client_info: parts.append({"text": f"\n[CLIENT DETAILS]:\n{client_info}"})
-    if facts: parts.append({"text": f"\n[CASE FACTS]:\n{facts}"})
+    if client_info: parts.append(types.Part.from_text(text=f"[CLIENT DETAILS]:\n{client_info}"))
+    if facts: parts.append(types.Part.from_text(text=f"[CASE FACTS]:\n{facts}"))
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    try:
-        response_stream = client.models.generate_content_stream(model='gemini-2.5-flash', contents=[{"role": "user", "parts": parts}])
-        for chunk in response_stream:
-            if chunk.text: yield chunk.text
-    except Exception as e: yield f"❌ **Drafting Engine Error:** {str(e)}"
+    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.2)
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    last_error = ""
+    for model in models_to_try:
+        try:
+            response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
+            for chunk in response_stream:
+                if chunk.text: yield chunk.text
+            return
+        except Exception as e:
+            last_error = str(e)
+            continue
+    yield f"❌ **Drafting Engine Error:** {last_error}"
 
 def get_translation_stream(text, target_lang, institution, pdf_text=None, image_data=None, audio_bytes=None):
     try: client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception:
-        yield "❌ **System Config Error.**"
+    except Exception as e:
+        yield f"❌ **System Config Error:** {str(e)}"
         return
         
     sys_instruction = f"ROLE: You are an expert Legal Translator at {institution}. TASK: Translate the provided legal document/text/audio accurately into highly formal {target_lang}. Preserve all legal meanings perfectly. Keep Latin maxims in Latin with translated meanings in brackets."
-    parts = [{"text": sys_instruction}]
-    if pdf_text: parts.append({"text": f"\n[DOCUMENT TO TRANSLATE]:\n{pdf_text[:15000]}"})
+    
+    parts = []
+    if pdf_text: parts.append(types.Part.from_text(text=f"[DOCUMENT TO TRANSLATE]:\n{pdf_text[:15000]}"))
     if image_data: parts.append(image_data)
-    if text: parts.append({"text": f"\n[ADDITIONAL TEXT TO TRANSLATE]:\n{text}"})
+    if text: parts.append(types.Part.from_text(text=f"[ADDITIONAL TEXT TO TRANSLATE]:\n{text}"))
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    try:
-        response_stream = client.models.generate_content_stream(model='gemini-2.5-flash', contents=[{"role": "user", "parts": parts}])
-        for chunk in response_stream:
-            if chunk.text: yield chunk.text
-    except Exception as e: yield f"❌ **Translation Engine Error:** {str(e)}"
+    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.1)
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    last_error = ""
+    for model in models_to_try:
+        try:
+            response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
+            for chunk in response_stream:
+                if chunk.text: yield chunk.text
+            return
+        except Exception as e:
+            last_error = str(e)
+            continue
+    yield f"❌ **Translation Engine Error:** {last_error}"
 
 def get_vault_analysis_stream(pdf_text=None, image_data=None, audio_bytes=None):
     try: client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    except Exception:
-        yield "❌ **System Config Error.**"
+    except Exception as e:
+        yield f"❌ **System Config Error:** {str(e)}"
         return
         
     sys_instruction = "ROLE: You are an archiving assistant for Aequilex. Extract the key legal facts, summary, and core arguments from the provided document, image, or audio memo. Format it cleanly in Markdown so it can be saved to a database."
-    parts = [{"text": sys_instruction}]
-    if pdf_text: parts.append({"text": f"\n[DOCUMENT TO ARCHIVE]:\n{pdf_text[:15000]}"})
+    
+    parts = []
+    if pdf_text: parts.append(types.Part.from_text(text=f"[DOCUMENT TO ARCHIVE]:\n{pdf_text[:15000]}"))
     if image_data: parts.append(image_data)
     if audio_bytes: parts.append(types.Part.from_bytes(data=audio_bytes, mime_type="audio/wav"))
         
-    try:
-        response_stream = client.models.generate_content_stream(model='gemini-2.5-flash', contents=[{"role": "user", "parts": parts}])
-        for chunk in response_stream:
-            if chunk.text: yield chunk.text
-    except Exception as e: yield f"❌ **Archiving Error:** {str(e)}"
+    config = types.GenerateContentConfig(system_instruction=sys_instruction, temperature=0.2)
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash']
+    last_error = ""
+    for model in models_to_try:
+        try:
+            response_stream = client.models.generate_content_stream(model=model, contents=[types.Content(role="user", parts=parts)], config=config)
+            for chunk in response_stream:
+                if chunk.text: yield chunk.text
+            return
+        except Exception as e:
+            last_error = str(e)
+            continue
+    yield f"❌ **Archiving Error:** {last_error}"
 
 # --- 7. UI LOGIC ---
 def login_page():
