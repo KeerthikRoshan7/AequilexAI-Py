@@ -634,7 +634,7 @@ Q
                 pdf_text, image_data = process_uploaded_file(uploaded_file)
                 audio_bytes = audio_data.getvalue() if is_audio_submission else None
                 
-                with st.spinner("Analyzing Query & Attached Files..."):
+                with st.spinner("Thinking..."):
                     stream = get_gemini_stream(query, tone, diff, st.session_state.user['institution'], history, pdf_text=pdf_text, image_data=image_data, audio_bytes=audio_bytes, enable_search=enable_search, strict_citation=strict_citation)
                     full_response = st.write_stream(stream)
                 
